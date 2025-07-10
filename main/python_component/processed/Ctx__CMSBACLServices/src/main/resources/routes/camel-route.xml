@@ -1,0 +1,716 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes xmlns="http://camel.apache.org/schema/spring"
+xmlns:xs="http://tempuri.org/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd"
+    id="Ctx__GetPassbookAccountTxn">
+    <route id="RT1_ESB_GetPassbookAccountTxn" streamCache="true">
+        <from uri="direct:esbGetPassbookAccountTxn" />
+        <!-- <from  uri="restlet:http://{{esbHost}}:{{ESB_GetPassbookAccountTxn}}/esb/get/passbook/account/transaction?restletMethod=POST" /> -->
+        <bean ref="Headers" method="getHeaders" />
+        <doTry>
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} |ESB_GetPassbookAccountTxn QUARK_STEP_1 REQUEST RECIEVED FROM USER_ ${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <setHeader name="requestBitMap">
+                <jsonpath>$.requestbitmap</jsonpath>
+            </setHeader>
+            <bean ref="getBits" method="readBits" /> <!--Set
+            Various Request In Headers -->
+            <setHeader name="PassbookAccounttxn">
+                <jsonpath>$.PassbookAccounttxn</jsonpath>
+            </setHeader> <!-- Authentication Call -->
+            <choice>
+                <when>
+                    <simple>${header.Authbit} == '1'</simple>
+                    <setHeader name="auth_id">
+                        <jsonpath>$.CustomerAuthentication.Auth_id</jsonpath>
+                    </setHeader>
+                    <choice> <!-- No Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '0'</simple>
+                            <setHeader name="authRespCode">
+                                <simple>0</simple>
+                            </setHeader>
+                            <setHeader name="Authbit">
+                                <simple>0</simple>
+                            </setHeader>
+                            <setHeader name="authResponse">
+                                <simple>{"returnCode":"0","responseMessage":"No Authentication"}</simple>
+                            </setHeader>
+                        </when> <!--
+                        OTP Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '1'</simple>
+                            <setHeader name="OTPBody">
+                                <jsonpath>$.CustomerAuthentication.Otp</jsonpath>
+                            </setHeader>
+                            <to uri="direct:OTPAuthentication" />
+                            <removeHeader name="OTPBody" />
+                        </when> <!--
+                        Aadhar Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '2'</simple>
+                            <setHeader name="AadharBody">
+                                <jsonpath>$.CustomerAuthentication.Aadhaar.data</jsonpath>
+                            </setHeader>
+                            <to uri="direct:AadharAuthentication" />
+                            <removeHeader name="AadharBody" />
+                        </when> <!-- FP
+                        Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '3'</simple>
+                            <setHeader name="FPBody">
+                                <jsonpath>$.CustomerAuthentication.Fp_Auth</jsonpath>
+                            </setHeader>
+                            <to uri="direct:FPAuthentication" />
+                            <removeHeader name="FPBody" />
+                        </when> <!-- OTP +
+                        Aadhar Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '4'</simple>
+                            <setHeader name="AadharBody">
+                                <jsonpath>$.CustomerAuthentication.Aadhaar.data</jsonpath>
+                            </setHeader>
+                            <setHeader name="OTPBody">
+                                <jsonpath>$.CustomerAuthentication.Otp</jsonpath>
+                            </setHeader>
+                            <to uri="direct:OTPAuthentication" />
+                            <choice>
+                                <when>
+                                    <simple>${header.otpRespCode} == '000'</simple>
+                                    <to uri="direct:AadharAuthentication" />
+                                    <choice>
+                                        <when>
+                                            <simple>${header.authResCode1}== 'y'</simple>
+                                            <setHeader name="authRespCode">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"0","responseMessage":"OTP+AADHAR Verification Successful"}</simple>
+                                            </setHeader>
+                                        </when>
+                                        <otherwise>
+                                            <setHeader name="authRespCode">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="PinGenReturnCode">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="PinGenResponse">
+                                                <simple>null</simple>
+                                            </setHeader>
+                                            <setHeader name="createPGNBit1">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"1","responseMessage":"AADAHR Verification Fail"}</simple>
+                                            </setHeader>
+                                        </otherwise>
+                                    </choice>
+                                </when>
+                                <otherwise>
+                                    <setHeader name="authRespCode">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="authResponse">
+                                        <simple>{"returnCode":"1","responseMessage":"OTP Verification Fail"}</simple>
+                                    </setHeader>
+                                </otherwise>
+                            </choice>
+                            <removeHeader name="AadharBody" />
+                            <removeHeader name="OTPBody" />
+                        </when> <!--
+                        OTP+FP Verification -->
+                        <when>
+                            <simple>${header.auth_id} == '5'</simple> <!-- Set FP Header to Use -->
+                            <setHeader name="FPBody">
+                                <jsonpath>$.CustomerAuthentication.Fp_Auth</jsonpath>
+                            </setHeader> <!--
+                            Set OTP Body using header -->
+                            <setHeader name="OTPBody">
+                                <jsonpath>$.CustomerAuthentication.Otp</jsonpath>
+                            </setHeader>
+                            <to uri="direct:OTPAuthentication" />
+                            <choice>
+                                <when>
+                                    <simple>${header.otpRespCode} == '000'</simple>
+                                    <to uri="direct:FPAuthentication" />
+                                    <choice>
+                                        <when>
+                                            <simple> ${header.Ftp_code} == '00' </simple>
+                                            <setHeader name="authRespCode">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"0","responseMessage":"OTP+FP Verification Successful"}</simple>
+                                            </setHeader>
+                                        </when>
+                                        <otherwise>
+                                            <setHeader name="authRespCode">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"1","responseMessage":"FP Verification Fail"}</simple>
+                                            </setHeader>
+                                        </otherwise>
+                                    </choice>
+                                </when>
+                                <otherwise>
+                                    <setHeader name="authRespCode">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="Authbit">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="authResponse">
+                                        <simple>{"returnCode":"1","responseMessage":"OTP Verification Fail"}</simple>
+                                    </setHeader>
+                                </otherwise>
+                            </choice>
+                            <removeHeader name="FPBody" />
+                            <removeHeader name="OTPBody" />
+                        </when> <!--
+                        AADHAR + FP Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '6'</simple> <!-- Set FP Header to Use In Dual Policy -->
+                            <setHeader name="FPBody">
+                                <jsonpath>$.CustomerAuthentication.Fp_Auth</jsonpath>
+                            </setHeader> <!--
+                            Set AADHAR Body using header -->
+                            <setHeader name="AadharBody">
+                                <jsonpath>$.CustomerAuthentication.Aadhaar.data</jsonpath>
+                            </setHeader>
+                            <to uri="direct:AadharAuthentication" />
+                            <choice>
+                                <when>
+                                    <simple>${header.authResCode1}== 'y'</simple>
+                                    <to uri="direct:FPAuthentication" />
+                                    <choice>
+                                        <when>
+                                            <simple> ${header.Ftp_code} == '00' </simple>
+                                            <setHeader name="authRespCode">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"0","responseMessage":"AADHAR+FP Verification Successful"}</simple>
+                                            </setHeader>
+                                        </when>
+                                        <otherwise>
+                                            <setHeader name="authRespCode">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"1","responseMessage":"FP Verification Fail"}</simple>
+                                            </setHeader>
+                                        </otherwise>
+                                    </choice>
+                                </when>
+                                <otherwise>
+                                    <setHeader name="authRespCode">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="Authbit">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="authResponse">
+                                        <simple>{"returnCode":"1","responseMessage":"AADAHR Verification Fail"}</simple>
+                                    </setHeader>
+                                </otherwise>
+                            </choice>
+                            <removeHeader name="FPBody" />
+                            <removeHeader name="AadharBody" />
+                        </when>
+                        <otherwise>
+                            <setHeader name="authRespCode">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="authResponse">
+                                <simple>{"returnCode":"1","responseMessage":"No Authentication Specified"}</simple>
+                            </setHeader>
+                        </otherwise>
+                    </choice>
+                </when>
+                <otherwise>
+                    <setHeader name="authRespCode">
+                        <simple>0</simple>
+                    </setHeader>
+                    <setHeader name="Authbit">
+                        <simple>0</simple>
+                    </setHeader>
+                    <setHeader name="authResponse">
+                        <simple>{"returnCode":"0","responseMessage":"No Authentication Specified"}</simple>
+                    </setHeader>
+                </otherwise>
+            </choice>
+            <choice>
+                <when>
+                    <simple>${header.PinGenBit} == '1' &amp;&amp; ${header.authRespCode} == '0'</simple>
+                    <to uri="direct:Passsbookdetailscall" />
+                </when>
+                <when>
+                    <simple>${header.PinGenBit} == '0' &amp;&amp; ${header.authRespCode} == '0'</simple>
+                    <setHeader name="PGNRespCode">
+                        <simple>0</simple>
+                    </setHeader>
+                </when>
+            </choice> <!--
+            Get DataBase Response Logging -->
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="Exception_Reason_${exception.stacktrace}" />
+                <setBody>
+                    <simple>{"returnCode":"500","responseMessage":"Error Occurred"}</simple>
+                </setBody>
+            </doCatch>
+            <doFinally>
+                <bean ref="finalResponse" method="combine" />
+                <log
+                    message=" X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| |ESB_GetPassbookAccountTxn QUARK_STEP_10 RESPONSE SENT TO USER_${body} "
+                    loggingLevel="INFO" logName="com.fino.asynclog" />
+                <!-- <wireTap uri="direct:Account_Opening_DB"  /> -->
+                <removeHeaders pattern="*" excludePattern="X-Correlation-Id|RequestorId" />
+                <setHeader name="Content-Type">
+                    <simple>application/json</simple>
+                </setHeader>
+            </doFinally>
+        </doTry>
+    </route> <!--
+    OTP Service Call -->
+    <route id="RT2_AccountOpeningWithCardLink_OTPRoute" streamCache="true">
+        <from uri="direct:OTPAuthentication" />
+        <setBody>
+            <simple>${header.OTPBody}</simple>
+        </setBody>
+        <marshal><json /></marshal>
+        <!-- <marshal ref="js" /> Get DataBase Request Logging -->
+        <choice>
+            <when>
+                <simple>${header.AccountOpening_DashBoard_Logging_Flag} == 'Y'</simple>
+                <choice>
+                    <when>
+                        <simple>${header.DashBoard_Logging_Flag} == '2' || ${header.DashBoard_Logging_Flag} == '3' || ${header.DashBoard_Logging_Flag} == '4' || ${header.DashBoard_Logging_Flag} == '5'</simple>
+                        <setHeader name="DBRequestInData">
+                            <simple> {"Method_ID":"30","Layer_ID":"12","Request_Flag":"1","Response_Flag":"0","Correlation_Request":"${header.X-Correlation-Id}","Correlation_Session":"1","Node_IP_Address": "{{esbHost}}","RequestIn": "${date:now:yyyy-MM-dd HH:mm:ss.SSS}","RequestOut": null,"Response_Message": "","Status_Code": "","Service_ID": "2"} </simple>
+                        </setHeader>
+                        <wireTap uri="direct:AccountOpeningWithCardLink"
+                             />
+                    </when>
+                </choice>
+            </when>
+        </choice>
+        <setHeader name="RequestData">
+            <jsonpath>$.RequestData</jsonpath>
+        </setHeader>
+        <log message=" header :: ${header.RequestData}" loggingLevel="INFO"
+            logName="com.fino.asynclog" />
+        <setBody>
+            <simple>${header.RequestData}</simple>
+        </setBody>
+        <log message="OTP Body ${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+        <setHeader name="idReq">
+            <jsonpath>$.RequestId</jsonpath>
+        </setHeader>
+        <setHeader name="numberMob">
+            <jsonpath>$.CustomerMobileNo</jsonpath>
+        </setHeader>
+        <setHeader name="pinOtp">
+            <jsonpath>$.OtpPin</jsonpath>
+        </setHeader>
+        <setBody>
+            <simple>{"MethodId": "2","TellerID": "11","CustomerMobileNo": "${header.numberMob}","EventId": "","VerifyParam": {"RequestId": "${header.idReq}","OtpPin": "${header.pinOtp}"}}</simple>
+        </setBody>
+        <removeHeader name="CamelHttpMethod" />
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="charset" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| |ESB_GetPassbookAccountTxn QUARK_STEP_2 REQUEST SENT FOR OTP VERIFICATION_${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <to uri="{{ESB_SMSService_FINO_URL_{{currentSetUp}}}}" />
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}||ESB_GetPassbookAccountTxn QUARK_STEP_3 RESPONSE RECEIVE FROM OTP VERIFICATION_${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <doTry>
+            <setHeader name="otpRespCode">
+                <jsonpath>$.ResponseCode</jsonpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="Exception occured: #${exception}" />
+                <setHeader name="otpRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PinGenReturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PinGenResponse">
+                    <simple>null</simple>
+                </setHeader>
+                <setHeader name="createPGNBit1">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <choice>
+            <when>
+                <simple>${header.otpRespCode} == '000'</simple>
+                <setHeader name="authRespCode">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"0","responseMessage":"OTP Verification Successful"}</simple>
+                </setHeader>
+            </when>
+            <otherwise>
+                <setHeader name="authRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PinGenReturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PinGenResponse">
+                    <simple>null</simple>
+                </setHeader>
+                <setHeader name="createPGNBit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"1","responseMessage":"OTP Verification Fail"}</simple>
+                </setHeader>
+            </otherwise>
+        </choice> <!--
+        Get DataBase Response Logging -->
+        <choice>
+            <when>
+                <simple>${header.AccountOpening_DashBoard_Logging_Flag} == 'Y'</simple>
+                <choice>
+                    <when>
+                        <simple>${header.DashBoard_Logging_Flag} == '2' || ${header.DashBoard_Logging_Flag} == '3' || ${header.DashBoard_Logging_Flag} == '4' || ${header.DashBoard_Logging_Flag} == '5'</simple>
+                        <setHeader name="DBRequestInData">
+                            <simple> {"Method_ID":"30","Layer_ID":"9","Request_Flag":"0","Response_Flag":"1","Correlation_Request":"${header.X-Correlation-Id}","Correlation_Session":"1 ","Node_IP_Address": "{{esbHost}}","RequestIn": "","RequestOut": "${date:now:yyyy-MM-dd HH:mm:ss.SSS}","Response_Message": "","Status_Code": "${header.otpRespCode}","Service_ID": "2"} </simple>
+                        </setHeader>
+                        <wireTap uri="direct:AccountOpeningWithCardLink"
+                             />
+                    </when>
+                </choice>
+            </when>
+        </choice>
+    </route> <!--
+    Aadhar Authentication Route -->
+    <route id="RT3_AccountOpeningWithCardLink_AadharRoute" streamCache="true">
+        <from uri="direct:AadharAuthentication" />
+        <setBody>
+            <simple>${header.AadharBody}</simple>
+        </setBody>
+        <removeHeader name="CamelHttpMethod" />
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="Connect*" />
+        <removeHeader name="charset" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" /> <!-- Get DataBase Request Logging -->
+        <choice>
+            <when>
+                <simple>${header.AccountOpening_DashBoard_Logging_Flag} == 'Y'</simple>
+                <choice>
+                    <when>
+                        <simple>${header.DashBoard_Logging_Flag} == '2' || ${header.DashBoard_Logging_Flag} == '3' || ${header.DashBoard_Logging_Flag} == '4' || ${header.DashBoard_Logging_Flag} == '5'</simple>
+                        <setHeader name="DBRequestInData">
+                            <simple> {"Method_ID":"30","Layer_ID":"12","Request_Flag":"1","Response_Flag":"0","Correlation_Request":"${header.X-Correlation-Id}","Correlation_Session":"2","Node_IP_Address": "{{esbHost}}","RequestIn": "${date:now:yyyy-MM-dd HH:mm:ss.SSS}","RequestOut": null,"Response_Message": "","Status_Code": "","Service_ID": "2"} </simple>
+                        </setHeader>
+                        <wireTap uri="direct:AccountOpeningWithCardLink" 
+                             />
+                    </when>
+                </choice>
+            </when>
+        </choice>
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}||ESB_GetPassbookAccountTxn QUARK_STEP_4 REQUEST SENT FOR AADHAAR VERIFICATION_${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" /> <!-- <to
+        uri="cxf:bean:KUA_Auth_Service?dataFormat=MESSAGE&amp;headerFilterStrategy=#fisHeaderFilter"
+        /> -->
+        <setHeader name="CamelHttpMethod">
+                    <simple>POST</simple>
+                </setHeader>
+                <setHeader name="Content-Type">
+                    <simple>application/json</simple>
+                </setHeader>
+        <to
+            uri="{{FINO_AADHARURL_{{currentSetUp}}}}?dataFormat=MESSAGE&amp;headerFilterStrategy=#fisHeaderFilter" />
+        <log
+            message=" X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}||ESB_GetPassbookAccountTxn QUARK_STEP_5 RESPONSE RECEIVED FOR AADHAAR VERIFICATION_${body} "
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <setBody>
+            <xpath>/*/*/xs:Auth_XML_CreationLevel_AUAResponse/xs:Auth_XML_CreationLevel_AUAResult/text()</xpath>
+        </setBody>
+        <convertBodyTo type="java.lang.String" /> <!-- Check for Aadhar Validation -->
+        <doTry>
+            <setHeader name="authResCode1">
+                <xpath>AuthRes/@ret</xpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="Exception occured: #${exception}" />
+                <setHeader name="authResCode1">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <doTry>
+            <setHeader name="MapperID">
+                <xpath>AuthRes/@Mapper_ID</xpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <setHeader name="MapperID">
+                    <simple>0</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <log message="Aadhar Verification Value:-${header.authResCode1}_${header.MapperID}" />
+        <choice>
+            <when>
+                <simple>${header.authResCode1}== 'y'</simple>
+                <setHeader name="authRespCode">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"0","responseMessage":"Aadhaar Authentication Successful"}</simple>
+                </setHeader>
+            </when>
+            <otherwise>
+                <setHeader name="authRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PinGenReturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PinGenResponse">
+                    <simple>null</simple>
+                </setHeader>
+                <setHeader name="createPGNBit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"2","responseMessage":"Aadhaar Authentication Failed"}</simple>
+                </setHeader>
+                <setBody>
+                    <simple>{"returnCode":"2","responseMessage":"Aadhaar Authentication Failed"}</simple>
+                </setBody>
+            </otherwise>
+        </choice> <!--
+        Get DataBase Response Logging -->
+        <choice>
+            <when>
+                <simple>${header.AccountOpening_DashBoard_Logging_Flag} == 'Y'</simple>
+                <choice>
+                    <when>
+                        <simple>${header.DashBoard_Logging_Flag} == '2' || ${header.DashBoard_Logging_Flag} == '3' || ${header.DashBoard_Logging_Flag} == '4' || ${header.DashBoard_Logging_Flag} == '5'</simple>
+                        <setHeader name="DBRequestInData">
+                            <simple> {"Method_ID":"30","Layer_ID":"12","Request_Flag":"0","Response_Flag":"1","Correlation_Request":"${header.X-Correlation-Id}","Correlation_Session":"2","Node_IP_Address": "{{esbHost}}","RequestIn": "","RequestOut": "${date:now:yyyy-MM-dd HH:mm:ss.SSS}","Response_Message": "","Status_Code": "${header.authResCode1}","Service_ID": "2"} </simple>
+                        </setHeader>
+                        <wireTap uri="direct:AccountOpeningWithCardLink"
+                             />
+                    </when>
+                </choice>
+            </when>
+        </choice>
+    </route> <!--
+    FP Authentication Route -->
+    <route id="RT4_AccountOpeningWithCardLink_FPRoute" streamCache="true">
+        <from uri="direct:FPAuthentication" />
+        <setBody>
+            <simple>${header.FPBody}</simple>
+        </setBody>
+        <marshal><json /></marshal>
+        <!-- <marshal ref="js" /> -->
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="charset" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+         <setHeader name="CamelHttpMethod">
+            <simple>POST</simple>
+        </setHeader>
+        <log
+            message=" X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}||ESB_GetPassbookAccountTxn QUARK_STEP_6 REQUEST SENT FOR FP AUTHENTICATION_${body} "
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <to
+            uri="{{FINO_FPURL_{{currentSetUp}}}}?headerFilterStrategy=#fisHeaderFilter" />
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}||ESB_GetPassbookAccountTxn QUARK_STEP_7 RESPONSE RECEIVED FOR FP AUTHENTICATION_${body} "
+            loggingLevel="INFO" logName="com.fino.asynclog" /> <!--Check
+        for FP Validation -->
+        <doTry>
+            <setHeader name="Ftp_code">
+                <jsonpath>$.ResponseCode</jsonpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="Exception occured: #${exception}" />
+                <setHeader name="Ftp_code">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <choice>
+            <when>
+                <simple>${header.Ftp_code} == '00' </simple>
+                <setHeader name="authRespCode">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"0","responseMessage":"FP Authentication Successful"}</simple>
+                </setHeader>
+            </when>
+            <otherwise>
+                <setHeader name="authRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"3","responseMessage":"FP Verification Failed"}</simple>
+                </setHeader>
+            </otherwise>
+        </choice> <!--
+        Get DataBase Response Logging -->
+    </route> <!--
+    Create PGN Service Call -->
+    <route id="RT5_Passsbookdetailscall_PGNRoute" streamCache="true">
+        <from uri="direct:Passsbookdetailscall" />
+        <setBody>
+            <simple>${header.PassbookAccounttxn}</simple>
+        </setBody>
+        <marshal><json /></marshal>
+        <!-- <marshal ref="js" /> -->
+        
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} ||ESB_GetPassbookAccountTxn QUARK_STEP_8 REQUEST SENT TO CBS _ ${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+            <bean ref="PassbookAccounttxn" method="PGNDetails" />
+        <!-- <to uri="cxfrs:bean:rsPassbookAccounttxn?throwExceptionOnFailure=false&amp;headerFilterStrategy=#fisHeaderFilter" /> -->
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} ||ESB_GetPassbookAccountTxn QUARK_STEP_9 RESPONSE RECIEVED FROM CBS_ ${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <convertBodyTo type="java.lang.String" />
+        <choice>
+            <when>
+                <simple>${header.CamelHttpResponseCode} == '200'</simple>
+                <log message="!!!!!!!!!!!!!!!!!!!!!!!!!!1"/>
+                <setHeader name="PinGenReturnCode">
+                    <jsonpath>$.returnCode</jsonpath>
+                </setHeader>
+                <log
+                    message="CamelHttpResponseCode 200 PinGenReturnCode_${header.PinGenReturnCode} "
+                    loggingLevel="INFO" logName="com.fino.asynclog" />
+                <choice>
+                    <when>
+                        <simple>${header.PinGenReturnCode} == '0'</simple>
+                        <setHeader name="PinGenReturnCode">
+                            <simple>0</simple>
+                        </setHeader>
+                        <setHeader name="createPGNBit1">
+                            <simple>0</simple>
+                        </setHeader>
+                        <setHeader name="PinGenResponse">
+                            <simple>${body}</simple>
+                        </setHeader>
+                        <log message="pgnReturnCode 0 PinGenReturnCode_${header.PinGenReturnCode} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                    </when>
+                    <otherwise>
+                    <log message="#################################"/>
+                        <setHeader name="PinGenReturnCode">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="PinGenResponse">
+                            <simple>${body}</simple>
+                        </setHeader>
+                        <setHeader name="createPGNBit1">
+                            <simple>1</simple>
+                        </setHeader>
+                    </otherwise>
+                </choice>
+            </when>
+            <when>
+                <simple>${header.CamelHttpResponseCode} == '500' || ${header.CamelHttpResponseCode} == '411' || ${header.CamelHttpResponseCode} == '400'</simple>
+                <log message="@@@@@@@@@@@@@@@@@@@@@@@@"/>
+                <setHeader name="PinGenReturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PinGenResponse">
+                    <simple>${body}</simple>
+                </setHeader>
+                <setHeader name="createPGNBit1">
+                    <simple>1</simple>
+                </setHeader>
+            </when>
+            <otherwise>
+            <log message="88888888888888888888"/>
+                <setHeader name="PinGenReturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PinGenResponse">
+                    <simple>{"returnCode":"1","responseMessage":"Internal Server Error"}</simple>
+                </setHeader>
+                <setHeader name="createPGNBit1">
+                    <simple>1</simple>
+                </setHeader>
+            </otherwise>
+        </choice> <!--
+        Get DataBase Response Logging -->
+    </route>
+</routes>

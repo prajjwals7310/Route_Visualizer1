@@ -1,0 +1,8 @@
+
+input.xml.dir=./xmls
+input.config=./input
+output.excel.path=./output/Final_Output.xlsx
+output.text.dir=./output/Component_Mapping
+output.json.path=./input/github.json
+processed.dir=./processed
+

@@ -1,0 +1,2483 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes xmlns="http://camel.apache.org/schema/spring"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd"
+    xmlns:xs="http://tempuri.org/"
+    id="Ctx__CMSAdichitragupta">
+    <route streamCache="true" trace="true" id="ESB_ADICHITRAGUPTASERVICE_Route">
+        <from uri="direct:esbADICHITRAGUPTASERVICEVerification" />
+        <!-- <from
+        uri="restlet:http://{{esbHost}}:{{ESB_ADICHITRAGUPTASERVICEVerification}}/esb/cms/adichitragupta/verification?restletMethod=POST"
+        /> -->
+        <doTry>
+            <bean method="processLog" ref="requestProcessor" />
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_1 REQUEST RECEIVED FROM USER__${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <setHeader name="ClientId">
+                <jsonpath>$.ClientId</jsonpath>
+            </setHeader>
+            <setHeader name="Unique_Id">
+                <jsonpath>$.UniqueId</jsonpath>
+            </setHeader>
+            <setProperty name="Method">
+                <simple>{{ESB_CMSAdichitraguptaVerificationMethod}}</simple>
+            </setProperty>
+            <setProperty name="TokenID">
+                <jsonpath>$.ClientFieldDetails.UniqueID</jsonpath>
+            </setProperty>
+            <setHeader name="SusPTimeOut">
+                <simple>{{ESB_ADICHITRAGUPTASERVICE_SuspiciousTimeout}}</simple>
+            </setHeader>
+            <setBody>
+                <simple>select LOCAL_TIME from TransactionsResponse with (nolock) where PCODE='CMSAdiChitraGuptaPosting' and Client_Id = '${header.ClientId}' AND TERMID = '${header.RId}' AND Unique_Id = '${header.Unique_Id}' AND LOCAL_DATE = '${date:now:yyyyMMdd}' order by 1 desc</simple>
+            </setBody>
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_2 _Route Request Sent to DB__${body}" />
+            <to uri="jdbc:esbDataSource" />
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_3 _Route Response Received from DB__${body}" />
+            <bean ref="AccountTxn" method="getTxnValues" />
+            <choice>
+                <when>
+                    <simple>${header.SuspiciousTxnFlag} == '1'</simple>
+                    <setHeader name="returnCode">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="responseMessage">
+                        <simple>Alert! Suspicious transaction detected. Please try after some time or contact your sales officer</simple>
+                    </setHeader>
+                    <setHeader name="ClientVerificationResponse">
+                        <simple>{"returnCode":"1","responseMessage":"Alert! Suspicious transaction detected. Please try after some time or contact your sales officer"}</simple>
+                    </setHeader>
+                </when>
+                <otherwise>
+                    <setHeader name="Authorization">
+                        <simple>${exchangeProperty.Authorization}</simple>
+                    </setHeader>
+                    <setHeader name="Content-Type">
+                        <simple>application/json</simple>
+                    </setHeader>
+                    <to uri="direct:ESB_ADICHITRAGUPTASERVICEPoint" />
+                </otherwise>
+            </choice>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_3 _Route Exception while Calling API_${exception.stacktrace} " />
+                <setHeader name="returnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="ClientVerificationResponse">
+                    <simple>{"ResponseCode":"999","responseMessage":"Error Occured while Calling API"}</simple>
+                </setHeader>
+            </doCatch>
+            <doFinally>
+                <bean ref="requestProcessor" method="concat" />
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_8 _Route RESPONSE BODY SENT TO USER_${body}"
+                    loggingLevel="INFO" logName="com.fino.asynclog" />
+                <setHeader name="Authorization">
+                    <simple>${exchangeProperty.Authorization}</simple>
+                </setHeader>
+                <setHeader name="Content-Type">
+                    <simple>application/json</simple>
+                </setHeader>
+                <removeHeaders pattern="*" excludePattern="Content-Type|Authorization" />
+            </doFinally>
+        </doTry>
+    </route>
+
+    <route id="RT2_ESB_ADICHITRAGUPTASERVICE_Route2" streamCache="true">
+        <from uri="direct:ESB_ADICHITRAGUPTASERVICEPoint" />
+        <removeHeader name="CamelHttpMethod" />
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="charset" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+        <removeHeaders pattern="Camel*" />
+        <doTry>
+            <setHeader name="CamelHttpMethod">
+                <constant>POST</constant>
+            </setHeader>
+            <setHeader name="Content-Type">
+                <simple>application/json</simple>
+            </setHeader>
+            <setHeader name="APPId">
+                <simple>{{ESB_CMSAdichitraguptaAppId}}</simple>
+            </setHeader>
+            <setHeader name="PreSharedKey">
+                <simple>{{ESB_CMSadichitraguptaPreSharedKey}}</simple>
+            </setHeader>
+            <setHeader name="version">
+                <simple>{{ESB_CMSAdichitraguptaversion}}</simple>
+            </setHeader>
+            <setHeader name="Authorization_Header">
+                <simple>{{ESB_CMSAdichitragupta_ClientName}}</simple>
+            </setHeader>
+            <setHeader name="Client_url">
+                <simple>{{ESB_CMS_Adichitragupta_URL}}</simple>
+            </setHeader>
+            <setBody>
+                <simple>{"Method": "${exchangeProperty.Method}","TokenID": "${exchangeProperty.TokenID}"}</simple>
+            </setBody>
+            <bean ref="Auth" method="authHeaders" />
+            <setHeader name="Authorization">
+                <simple>${exchangeProperty.Authorization}</simple>
+            </setHeader>
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_4 RT2_ESB_ADICHITRAGUPTASERVICE_Route2 REQUEST sent to Adichitragupta_:${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <bean ref="requestProcessor" method="process" />
+            <!-- <to pattern="InOut"
+            uri="cxfrs:bean:rsESB_ADICHITRAGUPTASERVICETransaction?throwExceptionOnFailure=false&amp;headerFilterStrategy=#finoHeaderFilter"
+            /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_5 RT2_ESB_ADICHITRAGUPTASERVICE_Route2 RESPONSE RECEIVED FROM Adichitragupta_:${body} "
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <setProperty name="apistatus">
+                <simple>${header.CamelHttpResponseCode}</simple>
+            </setProperty>
+            <setProperty name="myProperty">
+                <simple>${body}</simple>
+            </setProperty>
+            <setProperty name="clientbody">
+                <jsonpath>$.Response</jsonpath>
+            </setProperty> <!-- <setProperty
+            name="apistatus"><jsonpath>$.status</jsonpath></setProperty>-->
+            <log message=" apistatus :: ${exchangeProperty.apistatus}" loggingLevel="INFO"
+                logName="com.fino.asynclog" />
+            <log message=" myProperty :: ${exchangeProperty.myProperty}" loggingLevel="INFO"
+                logName="com.fino.asynclog" />
+            <log message=" clientbody :: ${exchangeProperty.clientbody}" loggingLevel="INFO"
+                logName="com.fino.asynclog" /> <!-- <marshal ref="json"/>-->
+            <choice>
+                <when>
+                    <simple>${exchangeProperty.apistatus} != '200'</simple>
+                    <setHeader name="returnCode">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="responseMessage">
+                        <simple>$.Status</simple>
+                    </setHeader>
+                    <setHeader name="ClientVerificationResponse">
+                        <simple>${body}</simple>
+                    </setHeader>
+                </when>
+                <otherwise>
+                    <setHeader name="statuscode">
+                        <simple>$.Status</simple>
+                    </setHeader>
+                    <setBody>
+                        <simple>${body}</simple>
+                    </setBody> <!--<marshal
+                    ref="json"/>-->
+                    <choice>
+                        <when>
+                            <simple>${exchangeProperty.apistatus} == '200'</simple>
+                            <doTry>
+                                <setBody>
+                                    <simple>{ "MethodId": 202, "RequestData":"${exchangeProperty.clientbody}", "SessionId": "","Identifier": 398}</simple>
+                                </setBody>
+                                <setHeader name="Content-Type">
+                                    <simple>application/json</simple>
+                                </setHeader>
+                                <setHeader name="CamelHttpMethod">
+                                    <simple>POST</simple>
+                                </setHeader>
+                                <log
+                                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_6 ESB_Adichitragupta_CMSVerificationTransaction RT2_ESB_ADICHITRAGUPTASERVICE_Route2 sending body to BLL for Decryption _${body}" />
+                                <to
+                                    uri="{{ESB_CMSAdichitraguptServiceBLL_URL}}?headerFilterStrategy=#fisHeaderFilter&amp;throwExceptionOnFailure=false&amp;soTimeout={{DEFAULT_TIMEOUT}}" />
+                                <log
+                                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_7 ESB_Adichitragupta_CMSVerificationTransaction RT2_ESB_ADICHITRAGUPTASERVICE_Route2 Response received from BLL for Decryption _${body}" />
+                                <setProperty name="Decryptedresponse">
+                                    <jsonpath>$.ResponseData</jsonpath>
+                                </setProperty>
+                                <setBody>
+                                    <simple>${exchangeProperty.Decryptedresponse}</simple>
+                                </setBody>
+                                <log message=" Body From BLL :: ${body} " loggingLevel="INFO"
+                                    logName="com.fino.asynclog" />
+                                <log
+                                    message=" Decryptedresponse From BLL :: ${exchangeProperty.Decryptedresponse} "
+                                    loggingLevel="INFO" logName="com.fino.asynclog" />
+                                <log message=" Status From BLL :: ${header.Status} "
+                                    loggingLevel="INFO" logName="com.fino.asynclog" />
+                                <unmarshal>
+                                    <json unmarshalType="java.util.Map" />
+                                </unmarshal>
+                                <bean ref="Auth" method="setHeaderThroghMap" />
+                                <!--<setHeader
+                                name="Status"> <jsonpath>$.Status</jsonpath> </setHeader>-->
+                                <log
+                                    message="RT2_ESB_ADICHITRAGUPTASERVICE_Route2 Body From BLL :: ${body} "
+                                    loggingLevel="INFO" logName="com.fino.asynclog" />
+                                <log
+                                    message="RT2_ESB_ADICHITRAGUPTASERVICE_Route2 Status From BLL :: ${header.Status} "
+                                    loggingLevel="INFO" logName="com.fino.asynclog" />
+                                <doCatch>
+                                    <exception>java.lang.Exception</exception>
+                                    <log
+                                        message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_AdichitraGupta_CMSVerification Exception while response from BLL _${exception.stacktrace} " />
+                                    <setBody>
+                                        <simple>{"returnCode":"1","responseMessage":"Exception Occurred While Calling BLL EncDec API"}</simple>
+                                    </setBody>
+                                    <setProperty name="Decryptedresponse">
+                                        <simple>${body}</simple>
+                                    </setProperty>
+                                    <setHeader name="status">
+                                        <simple>FAIL</simple>
+                                    </setHeader>
+                                </doCatch>
+                            </doTry> <!--
+                            <setHeader name="Status"><jsonpath>$.Status</jsonpath></setHeader>
+                            <setHeader
+                            name="BranchID"><jsonpath>$.OurBranchID</jsonpath></setHeader>
+                            <setHeader
+                            name="DepositAmount"><jsonpath>$.DepositAmount</jsonpath></setHeader>
+                            <setHeader
+                            name="TokenID_UniqueID"><jsonpath>$.TokenID</jsonpath></setHeader> -->
+                            <doTry>
+                                <choice>
+                                    <when>
+                                        <simple>${header.Status} == '1'</simple>
+                                        <setHeader name="returnCode">
+                                            <simple>0</simple>
+                                        </setHeader>
+                                        <setHeader name="responseMessage">
+                                            <simple>Success</simple>
+                                        </setHeader>
+                                        <!--<setHeader
+                                        name="ClientVerificationResponse"><simple>${body}</simple></setHeader>--> <!--
+                                        <setHeader
+                                        name="ClientVerificationResponse"><simple>{"UniqueID":
+                                        "${header.TokenID}", "transactionId": null, "branchId":
+                                        ${header.BranchID}, "masterId": null, "masterName":null,
+                                        "Amount": ${header.DepositAmount}, "minAmount": null,
+                                        "maxAmount": null, "iseditable": 0 }</simple></setHeader> -->
+                                        <setHeader name="ClientVerificationResponse">
+                                            <simple>${header.Decryptedresponse}</simple>
+                                        </setHeader>
+                                        <setBody>
+                                            <simple>{"returnCode": "0","responseMessage": "Success","ClientVerificationResponse": ${header.ClientVerificationResponse}}</simple>
+                                        </setBody>
+                                    </when>
+                                    <otherwise>
+                                        <setHeader name="returnCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="responseMessage">
+                                            <simple>${header.ResponseMsg}</simple>
+                                        </setHeader>
+                                        <setHeader name="ResponseMsg">
+                                            <simple>${header.ResponseMsg}</simple>
+                                        </setHeader>
+                                        <setHeader name="ClientVerificationResponse">
+                                            <simple>{"UniqueID": "${header.TokenID_UniqueID}", "transactionId": null, "branchId": ${header.BranchID}, "masterId": null, "masterName":null, "Amount": ${header.DepositAmount},  "minAmount": null, "maxAmount": null, "iseditable": 0 }</simple>
+                                        </setHeader>
+                                        <setBody>
+                                            <simple>{"returnCode": "1","responseMessage": "Fail","ClientVerificationResponse": ${header.ClientVerificationResponse}}</simple>
+                                        </setBody>
+                                    </otherwise>
+                                </choice>
+                                <doCatch>
+                                    <exception>java.lang.Exception</exception>
+                                    <marshal>
+                                        <json />
+                                    </marshal>
+                                    <setHeader name="ClientVerificationResponse">
+                                        <simple>${body}</simple>
+                                    </setHeader>
+                                    <setHeader name="returnCode">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="responseMessage">
+                                        <simple>Exception occurred in reading variables</simple>
+                                    </setHeader>
+                                </doCatch>
+                            </doTry>
+                        </when>
+                        <otherwise>
+                            <setHeader name="ClientVerificationResponse">
+                                <simple>${body}</simple>
+                            </setHeader>
+                            <setHeader name="returnCode">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="responseMessage">
+                                <simple>${exchangeProperty.apistatus} received from client</simple>
+                            </setHeader>
+                        </otherwise>
+                    </choice>
+                </otherwise>
+            </choice>
+            <doCatch>
+                <exception>java.net.SocketTimeoutException</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_5 SocketTimeOut Exception while Fetch data from ADICHITRAGUPTASERVICE _${exception}" />
+                <setHeader name="returnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="responseMessage">
+                    <simple>Time out from AdichitraGupta API</simple>
+                </setHeader>
+                <setHeader name="ClientVerificationResponse">
+                    <simple>{"returnCode":"998","responseMessage":"Time out from AdichitraGupta Client"}</simple>
+                </setHeader>
+            </doCatch>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_5 Exception while calling Adichtragupta:${exception} " />
+                <setHeader name="returnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="responseMessage">
+                    <simple>Exception Occurred </simple>
+                </setHeader>
+                <setHeader name="ClientVerificationResponse">
+                    <simple>{"returnCode":"999","responseMessage":"Exception Occurred"} </simple>
+                </setHeader>
+            </doCatch>
+            <doFinally>
+                <setHeader name="Content-Type">
+                    <simple>application/json</simple>
+                </setHeader>
+            </doFinally>
+        </doTry>
+    </route>
+    <route id="ESB_CMSAdichitraguptaTransaction_Route" streamCache="true" trace="true">
+        <from uri="direct:esbCMSAdichitraguptaTransaction" />
+        <!-- <from
+        uri="restlet:http://{{esbHost}}:{{ESB_CMSAdichitraguptaTransaction}}/esb/cms/adichitragupta/transaction?restletMethod=POST"
+        /> -->
+        <bean ref="txnrequestProcessor" method="processLog" />
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_1 ESB_CMSAdichitraguptaTransaction_Route REQUEST RECEIVE FROM USER_${body} "
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <setHeader name="requestbitmap">
+            <jsonpath>$.requestbitmap</jsonpath>
+        </setHeader>
+        <setHeader name="CashCollectionRequest">
+            <jsonpath>$.CashCollectionRequest</jsonpath>
+        </setHeader>
+        <setHeader name="DBFlag">
+            <simple>{{DBFlagForInsert}}</simple>
+        </setHeader>
+        <setHeader name="postTransaction">
+            <jsonpath>$.TransactionList</jsonpath>
+        </setHeader>
+        <setHeader name="trans_ref_no">
+            <jsonpath>$.TransactionList.referenceNo</jsonpath>
+        </setHeader>
+        <setHeader name="MobileNumForSMS">
+            <jsonpath>$.MobileNo</jsonpath>
+        </setHeader>
+        <setHeader name="clientId">
+            <jsonpath>$.ClientID</jsonpath>
+        </setHeader>
+        <setHeader name="Unique_Id">
+            <jsonpath>$.UniqueID</jsonpath>
+        </setHeader>
+        <setHeader name="District">
+            <jsonpath>$.District</jsonpath>
+        </setHeader>
+        <setHeader name="State">
+            <jsonpath>$.State</jsonpath>
+        </setHeader>
+        <setHeader name="returnCode">
+            <simple>0</simple>
+        </setHeader>
+        <setHeader name="txnRespCode">
+            <simple>1</simple>
+        </setHeader>
+        <setProperty name="Amount">
+            <jsonpath>$.CashCollectionRequest.Amount</jsonpath>
+        </setProperty>
+        <doTry>
+            <setProperty name="supportDataLDN">
+                <jsonpath>$.LDNStr</jsonpath>
+            </setProperty>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.Requestorid} | ESB_CMSAdichitraguptaTransaction ESB_CMSAdichitraguptaTransaction_Route Exception Occured in json supportDataLDN tag not found" />
+                <setProperty name="supportDataLDN">
+                    <simple></simple>
+                </setProperty>
+            </doCatch>
+        </doTry> <!--
+        Cola Transaction changes -->
+        <doTry>
+            <setHeader name="COLAIdentifier">
+                <jsonpath>$.COLAIdentifier</jsonpath>
+            </setHeader>
+            <setHeader name="COLA-access-token">
+                <jsonpath>$.COLAaccesstoken</jsonpath>
+            </setHeader>
+            <setHeader name="COLA_RefNo">
+                <jsonpath>$.COLATxnId</jsonpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="Not Cola Transaction" />
+                <setHeader name="COLAIdentifier">
+                    <simple>0</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <doTry> <!-- Authentication Call -->
+            <bean ref="AccountTxn" method="readBitmap" />
+            <choice>
+                <when>
+                    <simple>${header.CustomerAuthBit} == '1'</simple>
+                    <doTry>
+                        <setHeader name="auth_id">
+                            <jsonpath>$.CustomerAuthentication.Auth_id</jsonpath>
+                        </setHeader>
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <setHeader name="auth_id">
+                                <simple>0</simple>
+                            </setHeader>
+                        </doCatch>
+                    </doTry>
+                    <choice> <!-- No Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '0'</simple>
+                            <setHeader name="authRespCode">
+                                <simple>0</simple>
+                            </setHeader>
+                            <setHeader name="Authbit">
+                                <simple>0</simple>
+                            </setHeader>
+                            <setHeader name="authResponse">
+                                <simple>{"returnCode":"0","responseMessage":"No Authentication"}</simple>
+                            </setHeader>
+                        </when> <!--
+                        OTP Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '1'</simple>
+                            <setHeader name="OTPBody">
+                                <jsonpath>$.CustomerAuthentication.Otp</jsonpath>
+                            </setHeader>
+                            <to uri="direct:OTPAuthentication" />
+                            <removeHeader name="OTPBody" />
+                        </when> <!--
+                        Aadhar Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '2'</simple>
+                            <setHeader name="AadharBody">
+                                <jsonpath>$.CustomerAuthentication.Aadhaar.data</jsonpath>
+                            </setHeader>
+                            <to uri="direct:AadharAuthentication" />
+                            <removeHeader name="AadharBody" />
+                        </when> <!-- FP
+                        Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '3'</simple>
+                            <setHeader name="FPBody">
+                                <jsonpath>$.CustomerAuthentication.Fp_Auth</jsonpath>
+                            </setHeader>
+                            <to uri="direct:FPAuthentication" />
+                            <removeHeader name="FPBody" />
+                        </when> <!-- OTP +
+                        Aadhar Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '4'</simple>
+                            <setHeader name="AadharBody">
+                                <jsonpath>$.CustomerAuthentication.Aadhaar.data</jsonpath>
+                            </setHeader>
+                            <setHeader name="OTPBody">
+                                <jsonpath>$.CustomerAuthentication.Otp</jsonpath>
+                            </setHeader>
+                            <to uri="direct:OTPAuthentication" />
+                            <choice>
+                                <when>
+                                    <simple>${header.otpRespCode} == '000'</simple>
+                                    <to uri="direct:AadharAuthentication" />
+                                    <choice>
+                                        <when>
+                                            <simple>${header.authResCode1}== 'y'</simple>
+                                            <setHeader name="authRespCode">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"0","responseMessage":"OTP+AADHAR Verification Successful"}</simple>
+                                            </setHeader>
+                                        </when>
+                                        <otherwise>
+                                            <setHeader name="authRespCode">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"1","responseMessage":"AADAHR Verification Fail"}</simple>
+                                            </setHeader>
+                                        </otherwise>
+                                    </choice>
+                                </when>
+                                <otherwise>
+                                    <setHeader name="authRespCode">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="authResponse">
+                                        <simple>{"returnCode":"1","responseMessage":"OTP Verification Fail"}</simple>
+                                    </setHeader>
+                                </otherwise>
+                            </choice>
+                            <removeHeader name="AadharBody" />
+                            <removeHeader name="OTPBody" />
+                        </when> <!--
+                        OTP+FP Verification -->
+                        <when>
+                            <simple>${header.auth_id} == '5'</simple> <!-- Set FP Header to Use -->
+                            <setHeader name="FPBody">
+                                <jsonpath>$.CustomerAuthentication.Fp_Auth</jsonpath>
+                            </setHeader> <!--
+                            Set OTP Body using header -->
+                            <setHeader name="OTPBody">
+                                <jsonpath>$.CustomerAuthentication.Otp</jsonpath>
+                            </setHeader>
+                            <to uri="direct:OTPAuthentication" />
+                            <choice>
+                                <when>
+                                    <simple>${header.otpRespCode} == '000'</simple>
+                                    <to uri="direct:FPAuthentication" />
+                                    <choice>
+                                        <when>
+                                            <simple> ${header.Ftp_code} == '00' </simple>
+                                            <setHeader name="authRespCode">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"0","responseMessage":"OTP+FP Verification Successful"}</simple>
+                                            </setHeader>
+                                        </when>
+                                        <otherwise>
+                                            <setHeader name="authRespCode">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"1","responseMessage":"FP Verification Fail"}</simple>
+                                            </setHeader>
+                                        </otherwise>
+                                    </choice>
+                                </when>
+                                <otherwise>
+                                    <setHeader name="authRespCode">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="Authbit">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="authResponse">
+                                        <simple>{"returnCode":"1","responseMessage":"OTP Verification Fail"}</simple>
+                                    </setHeader>
+                                </otherwise>
+                            </choice>
+                            <removeHeader name="FPBody" />
+                            <removeHeader name="OTPBody" />
+                        </when> <!--
+                        AADHAR + FP Authentication -->
+                        <when>
+                            <simple>${header.auth_id} == '6'</simple> <!-- Set FP Header to Use In Dual Policy -->
+                            <setHeader name="FPBody">
+                                <jsonpath>$.CustomerAuthentication.Fp_Auth</jsonpath>
+                            </setHeader> <!--
+                            Set AADHAR Body using header -->
+                            <setHeader name="AadharBody">
+                                <jsonpath>$.CustomerAuthentication.Aadhaar.data</jsonpath>
+                            </setHeader>
+                            <to uri="direct:AadharAuthentication" />
+                            <choice>
+                                <when>
+                                    <simple>${header.authResCode1}== 'y'</simple>
+                                    <to uri="direct:FPAuthentication" />
+                                    <choice>
+                                        <when>
+                                            <simple> ${header.Ftp_code} == '00' </simple>
+                                            <setHeader name="authRespCode">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>0</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"0","responseMessage":"AADHAR+FP Verification Successful"}</simple>
+                                            </setHeader>
+                                        </when>
+                                        <otherwise>
+                                            <setHeader name="authRespCode">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="Authbit">
+                                                <simple>1</simple>
+                                            </setHeader>
+                                            <setHeader name="authResponse">
+                                                <simple>{"returnCode":"1","responseMessage":"FP Verification Fail"}</simple>
+                                            </setHeader>
+                                        </otherwise>
+                                    </choice>
+                                </when>
+                                <otherwise>
+                                    <setHeader name="authRespCode">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="Authbit">
+                                        <simple>1</simple>
+                                    </setHeader>
+                                    <setHeader name="authResponse">
+                                        <simple>{"returnCode":"1","responseMessage":"AADAHR Verification Fail"}</simple>
+                                    </setHeader>
+                                </otherwise>
+                            </choice>
+                            <removeHeader name="FPBody" />
+                            <removeHeader name="AadharBody" />
+                        </when>
+                        <otherwise>
+                            <setHeader name="authRespCode">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="authResponse">
+                                <simple>{"returnCode":"1","responseMessage":"No Authentication Specified"}</simple>
+                            </setHeader>
+                        </otherwise>
+                    </choice>
+                </when>
+                <otherwise>
+                    <setHeader name="authRespCode">
+                        <simple>0</simple>
+                    </setHeader>
+                    <setHeader name="authResponse">
+                        <simple>{"returnCode":"0","responseMessage":"No Authentication"}</simple>
+                    </setHeader>
+                </otherwise>
+            </choice>
+            <choice>
+                <when>
+                    <simple>${header.authRespCode} == '0' &amp;&amp; ${header.PostTxnBit} == '1'</simple>
+                    <to uri="direct:debitCreditRoute" />
+                    <setHeader name="Content-Type">
+                        <simple>application/json</simple>
+                    </setHeader>
+                </when>
+            </choice>
+            <choice>
+                <when>
+                    <simple>${header.authRespCode} == '0' &amp;&amp; ${header.txnRespCode} == '0' &amp;&amp; ${header.PaymentBit} == '1'</simple>
+                    <to uri="direct:ESB_CMSAdichitraguptaTransaction_Route" />
+                    <setHeader name="Content-Type">
+                        <simple>application/json</simple>
+                    </setHeader>
+                </when>
+            </choice>
+            <doFinally>
+                <bean ref="concatenate" />
+                <setHeader name="Content-Type">
+                    <simple>application/json</simple>
+                </setHeader>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_ ESB_CMSAdichitragupta ESB_CMSAdichitraguptaTransaction_Route RESPONSE BODY SENT TO USER_${body} "
+                    loggingLevel="INFO" logName="com.fino.asynclog" />
+                <removeHeaders pattern="*"
+                    excludePattern="Content-Type|token12|referenceNo|X-Correlation-Id|RequestorId" />
+            </doFinally>
+        </doTry>
+    </route> <!--
+    Adichitragupta payment route -->
+    <route streamCache="true" id="RT_ESB_CMSAdiChitraGupta_Payments_route">
+        <from uri="direct:ESB_CMSAdichitraguptaTransaction_Route" />
+        <setBody>
+            <simple>${header.CashCollectionRequest}</simple>
+        </setBody>
+        <marshal>
+            <json />
+        </marshal>
+        <setProperty name="TokenID">
+            <jsonpath>$.UniqueID</jsonpath>
+        </setProperty>
+        <setProperty name="Amount">
+            <jsonpath>$.Amount</jsonpath>
+        </setProperty>
+        <setProperty name="transactionId">
+            <jsonpath>$.transactionId</jsonpath>
+        </setProperty>
+        <setProperty name="shortLink">
+            <jsonpath>$.SMSParam10</jsonpath>
+        </setProperty>
+        <setProperty name="deposit_date">
+            <jsonpath>$.transactiondate</jsonpath>
+        </setProperty>
+        <setProperty name="OurBranchID">
+            <jsonpath>$.OurBranchID</jsonpath>
+        </setProperty>
+        <setHeader name="CamelHttpMethod">
+            <constant>POST</constant>
+        </setHeader>
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <setHeader name="APPId">
+            <simple>{{ESB_CMSAdichitraguptaAppId}}</simple>
+        </setHeader>
+        <setHeader name="PreSharedKey">
+            <simple>{{ESB_CMSadichitraguptaPreSharedKey}}</simple>
+        </setHeader>
+        <setHeader name="version">
+            <simple>{{ESB_CMSAdichitraguptaversion}}</simple>
+        </setHeader>
+        <setHeader name="Authorization_Header">
+            <simple>{{ESB_CMSAdichitragupta_ClientName}}</simple>
+        </setHeader>
+        <setHeader name="Client_url">
+            <simple>{{ESB_CMS_Adichitragupta_URL}}</simple>
+        </setHeader>
+        <setHeader name="MethodTransation">
+            <simple>{{ESB_CMSAdichitraguptaTransactionMethod}}</simple>
+        </setHeader>
+        <removeHeaders pattern="Camel*"></removeHeaders>
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="charset" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+        <setHeader name="TransactionQueryReq">
+            <simple>{"Insert_Type": "0","requestType": "1","ACCTNUM": "${header.accountName}", "PCODE": "CMSAdiChitraGuptaPosting", "MSGTYPE": "0","TRACE": "${header.trans_ref_no}","AMOUNT": "${header.amt}","TERMID":"${header.RequestorId}", "CH_AMOUNT": "", "AMOUNT_EQUIV": "","Support_data": "${header.supportData}", "Credit_Debit_Flag": "C","appId": "${header.appId}", "isInclusive": "${header.isInclusive}","Method_Id": "${header.MethodId}","Source_Id": "","Biller_Id": "","Payment_Channel_Id": "${header.Payment_Channel_Id}","TXNSRC":"${header.TXNSRC}","TXNDEST":"{{esbHost}}","Payment_Type": "CMS","MerchantMobileNo": "null","RemeMobileNo": "null","RemeName": "null","BeneBankName": "null","BeneBranchName": "null","X_CORRELATION_ID":"${header.X-Correlation-Id}","CostCenter":"${header.costCenter}","Layer":"ESB","MerchantMobileNo":"${header.beneficiaryMobile}","RemeMobileNo":"${header.remitterMobile}"} </simple>
+        </setHeader>
+        <doTry>
+            <to uri="seda:insertrequestresponse?waitForTaskToComplete=Never" />
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta RT_ESB_CMSAdiChitraGupta_Payments_route TransactionQueueRequest_Exception__ ${header.TransactionQueryReq}" />
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta RT_ESB_CMSAdiChitraGupta_Payments_route Exception Occured while que insert: ${exception}" />
+                <removeHeader name="TransactionQueryReq" />
+            </doCatch>
+        </doTry>
+        <doTry>
+            <bean ref="Auth" method="authHeaders" />
+            <setHeader name="Authorization">
+                <simple>${exchangeProperty.Authorization}</simple>
+            </setHeader>
+            <setHeader name="CamelHttpMethod">
+                <constant>POST</constant>
+            </setHeader>
+            <setHeader name="Content-Type">
+                <simple>application/json</simple>
+            </setHeader>
+            <setBody>
+                <simple>{"Method":"${header.MethodTransation}","TokenID":"${exchangeProperty.TokenID}","DepositAmount":"${exchangeProperty.Amount}","Refid":"${header.trans_ref_no}"}</simple>
+            </setBody>
+            <setHeader name="clientbodyforReposting">
+                <simple>${body}</simple>
+            </setHeader>
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_2 ESB_CMSAdichitraguptaTransactionMethod->RT_ESB_CMSAdiChitraGupta_Payments_route | ESB_ADICHITRAGUPTASERVICE Request Sent ${body}" />
+            <bean ref="txnrequestProcessor" method="process" />
+
+            <!-- <to pattern="InOut"
+            uri="cxfrs:bean:rsESB_ADICHITRAGUPTASERVICETransaction?throwExceptionOnFailure=false&amp;headerFilterStrategy=#finoHeaderFilter"
+            /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_3 ESB_CMSAdichitraguptaTransactionMethod->RT_ESB_CMSAdiChitraGupta_Payments_route | ESB_ADICHITRAGUPTASERVICE Response Received :: ${body}" />
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | ADICHITRAGUPTASERVICE->RT_ESB_CMSAdiChitraGupta_Payments_route CamelHttpResponseCode :: ${header.CamelHttpResponseCode}" />
+            <setHeader name="SaveCMAhttpcode">
+                <simple>${header.CamelHttpResponseCode}</simple>
+            </setHeader>
+            <setProperty name="apistatus">
+                <simple>${header.CamelHttpResponseCode}</simple>
+            </setProperty>
+            <setProperty name="myProperty">
+                <simple>${body}</simple>
+            </setProperty>
+            <setProperty name="clientbody">
+                <jsonpath>$.Response</jsonpath>
+            </setProperty>
+            <choice>
+                <when>
+                    <simple>${header.SaveCMAhttpcode} == '200' </simple>
+                    <log
+                        message="X-Correlation-Id_${header.X-Correlation-Id} | ESB_ADICHITRAGUPTASERVICE RT_ESB_CMSAdiChitraGupta_Payments_route inside ESB_CMSAdichitraguptServiceBLL_URL true condition" />
+                    <doTry>
+                        <setBody>
+                            <simple>{ "MethodId": 202, "RequestData":"${exchangeProperty.clientbody}", "SessionId": "","Identifier": 398}</simple>
+                        </setBody>
+                        <log message="RT_ESB_CMSAdiChitraGupta_Payments_route From BLL Inside"
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <setHeader name="Content-Type">
+                            <simple>application/json</simple>
+                        </setHeader>
+                        <setHeader name="CamelHttpMethod">
+                            <simple>POST</simple>
+                        </setHeader>
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_4 ESB_Adichitragupta_ RT_ESB_CMSAdiChitraGupta_Payments_route sending body to BLL for Decryption _${body}" />
+                        <to
+                            uri="{{ESB_CMSAdichitraguptServiceBLL_URL}}?headerFilterStrategy=#fisHeaderFilter&amp;throwExceptionOnFailure=false&amp;soTimeout={{DEFAULT_TIMEOUT}}" />
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_5 ESB_Adichitragupta RT_ESB_CMSAdiChitraGupta_Payments_route Response received from BLL for Decryption _${body}" />
+                        <log message="RT_ESB_CMSAdiChitraGupta_Payments_route From BLL Outside"
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <setProperty name="Decryptedresponse">
+                            <jsonpath>$.ResponseData</jsonpath>
+                        </setProperty>
+                        <log message="Response From BLL :: ${exchangeProperty.Decryptedresponse} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <setBody>
+                            <simple>${exchangeProperty.Decryptedresponse}</simple>
+                        </setBody>
+                        <log
+                            message="ESB_CMSAdichitragupta RT_ESB_CMSAdiChitraGupta_Payments_route From BLL :: ${exchangeProperty.Decryptedresponse} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <unmarshal>
+                            <json unmarshalType="java.util.Map" />
+                        </unmarshal>
+                        <bean ref="Auth" method="setHeaderThroghMap" />
+                        <log
+                            message="ESB_CMSAdichitragupta RT_ESB_CMSAdiChitraGupta_Payments_route From BLL :: ${body} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <log
+                            message="ESB_CMSAdichitragupta RT_ESB_CMSAdiChitraGupta_Payments_route From BLL :: ${header.Status} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <setHeader name="ApiStatusResponse">
+                            <simple>${header.Status}</simple>
+                        </setHeader>
+                        <log
+                            message="ESB_CMSAdichitragupta RT_ESB_CMSAdiChitraGupta_Payments_route From BLL ApiStatusResponse:: ${header.ApiStatusResponse} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} |ESB_CMSAdichitragupta RT_ESB_CMSAdiChitraGupta_Payments_route Error Occured In Response Code_${exception}"></log>
+                            <setHeader name="ApiStatusResponse">
+                                <simple>0</simple>
+                            </setHeader>
+                        </doCatch>
+                    </doTry>
+                    <choice>
+                        <when>
+                            <simple> ${header.ApiStatusResponse} == '1'</simple>
+                            <setHeader name="responseMessage">
+                                <simple>Success</simple>
+                            </setHeader>
+                            <log
+                                message="ESB_ADICHITRAGUPTASERVICE RT_ESB_CMSAdiChitraGupta_Payments_route ApiStatusResponse :: ${header.ApiStatusResponse}" />
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE RT_ESB_CMSAdiChitraGupta_Payments_route Response RECEVIED Success from ESB_ADICHITRAGUPTASERVICE${body}" />
+                        </when>
+                        <otherwise>
+                            <setHeader name="responseMessage">
+                                <simple>${header.ResponseMsg}</simple>
+                            </setHeader>
+
+                            <log
+                                message="ESB_ADICHITRAGUPTASERVICE Response --> calling ${header.ResponseMsg}" />
+
+                            <!-- <to uri="direct:CMSAdiChitraGuptaStatusPoint" /> -->
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE RT_ESB_CMSAdiChitraGupta_Payments_route Response RECEVIED_${header.ApiStatusResponse}_${header.CamelHttpResponseCode}_${body}" />
+                        </otherwise>
+                    </choice>
+                </when>
+                <otherwise>
+                    <setHeader name="ApiStatusResponse">
+                        <simple>${header.CamelHttpResponseCode}</simple>
+                    </setHeader>
+                    <setHeader name="responseMessage">
+                        <simple>${header.SaveCMAhttpcode} from AdiChitraGupta</simple>
+                    </setHeader>
+                    <log
+                        message="ESB_ADICHITRAGUPTASERVICE Response --> calling RT_ESB_CMSAdiChitraGupta_Payments_route :: ${header.ApiStatusResponse}_${header.CamelHttpResponseCode}_${body}" />
+                    <!-- <to uri="direct:CMSAdiChitraGuptaStatusPoint" /> -->
+                    <log
+                        message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE RT_ESB_CMSAdiChitraGupta_Payments_route Response RECEVIED ESB_ADICHITRAGUPTASERVICE${header.ApiStatusResponse}_${header.CamelHttpResponseCode}_${body}" />
+                </otherwise>
+            </choice>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <setHeader name="responseMessage">
+                    <simple>${exception} from AdiChitraGupta</simple>
+                </setHeader>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_3 Exception occured in Client posting API_${header.ApiStatusResponse}__${exception.stacktrace} " />
+                <!-- <to uri="direct:CMSAdiChitraGuptaStatusPoint" /> -->
+            </doCatch>
+            <doFinally>
+                <choice>
+                    <when>
+                        <simple>${header.ApiStatusResponse} == '1'</simple>
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE RT_ESB_CMSAdiChitraGupta_Payments_route Response RECEVIED_${body}" />
+                        <setHeader name="returnCode">
+                            <simple>0</simple>
+                        </setHeader>
+                        <setHeader name="responseMessage">
+                            <simple>Success</simple>
+                        </setHeader>
+                        <setHeader name="clientStatus">
+                            <simple>Success</simple>
+                        </setHeader>
+                        <setHeader name="paymentResponse">
+                            <simple>{"returnCode":"0","responseMessage":"Success"}</simple>
+                        </setHeader>
+                        <setHeader name="DBreturnCode">
+                            <simple>0</simple>
+                        </setHeader>
+                        <to uri="seda:smsService_url?waitForTaskToComplete=Never" />
+                        <to uri="seda:loanCollectionEmail?waitForTaskToComplete=Never" />
+                        <setHeader name="UpdateRFU">
+                            <simple>{"referenceNo": "${header.trans_ref_no}","rfuField": "ZRFUT7","rfuValue": "0"}</simple>
+                        </setHeader>
+                        <to uri="seda:UpdateRFUcall?waitForTaskToComplete=Never" />
+                    </when>
+                    <otherwise>
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE RT_ESB_CMSAdiChitraGupta_Payments_route Response RECEVIED Fail from ESB_ADICHITRAGUPTASERVICE otherwise _${body}" />
+                        <setHeader name="returnCode">
+                            <simple>0</simple>
+                        </setHeader>
+                        <setHeader name="DBreturnCode">
+                            <simple>2</simple>
+                        </setHeader>
+                        <setHeader name="clientStatus">
+                            <simple>Success</simple>
+                        </setHeader>
+                        <setHeader name="clientrespMessage">
+                            <simple>Success</simple>
+                        </setHeader>
+                        <setHeader name="paymentResponse">
+                            <simple>{"returnCode":"0","responseMessage":"Success"}</simple>
+                        </setHeader>
+                        <setHeader name="UpdateRFU">
+                            <simple>{"referenceNo": "${header.trans_ref_no}","rfuField": "ZRFUT7","rfuValue": "2"}</simple>
+                        </setHeader>
+                        <to uri="seda:UpdateRFUcall?waitForTaskToComplete=Never" />
+                        <to uri="seda:smsService_url?waitForTaskToComplete=Never" />
+                        <to uri="seda:loanCollectionEmail?waitForTaskToComplete=Never" />
+                        <setBody>
+                            <simple>${header.clientbodyforReposting}</simple>
+                        </setBody>
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_6 inside otherwise of Code sending data to queue _${body}" />
+                        <to pattern="InOnly"
+                            uri="repostingActivemq:queue:CMSAdiChitraGuptaReposting?timeToLive={{ESB_ADICHITRAGUPTASERVICE_TimeToLive}}" />
+                    </otherwise>
+                </choice>
+                <doTry>
+                    <setHeader name="TransactionQueryReq">
+                        <simple>{"Insert_Type": "1","Request_Type": "1","ACCTNUM": "${header.accountName}","PCODE": "CMSAdiChitraGuptaPosting","MSGTYPE": "0","RESPCODE": "${header.DBreturnCode}","Response_Msg": "${header.responseMessage}","TRACE": "${header.trans_ref_no}","REFNUM": "","AMOUNT": "${header.amt}","TERMID": "${header.RequestorId}","Ledger_Balance": "","GL_Ledger_Balance": "","Payment_Status": "${header.clientStatus}","Bene_AccNo": "null","BeneIFSC": "null","File_Id": "0","BeneName": "null","Client_Id": "${header.clientId}","Unique_Id": "${header.Unique_Id}","X_CORRELATION_ID":"${header.X-Correlation-Id}"}</simple>
+                    </setHeader>
+                    <to uri="seda:insertrequestresponse?waitForTaskToComplete=Never" />
+                    <doCatch>
+                        <exception>java.lang.Exception</exception>
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction TransactionQueueResponse_Exception_ESB_TarrashnaCMSTransacion_Msg_ ${header.TransactionQueryReq}" />
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction Exception Occured while que insert: ${exception}" />
+                        <removeHeader name="TransactionQueryReq" />
+                    </doCatch>
+                </doTry>
+            </doFinally>
+        </doTry>
+    </route>
+    <route id="RT3_Payments_OTPRoute" streamCache="true">
+        <from uri="direct:OTPAuthentication" />
+        <setBody>
+            <simple>${header.OTPBody}</simple>
+        </setBody>
+        <marshal>
+            <json />
+        </marshal>
+        <setHeader name="RequestData">
+            <jsonpath>$.RequestData</jsonpath>
+        </setHeader>
+        <setBody>
+            <simple>${header.RequestData}</simple>
+        </setBody>
+        <setHeader name="RequestId">
+            <jsonpath>$.RequestId</jsonpath>
+        </setHeader>
+        <setHeader name="numberMob">
+            <jsonpath>$.CustomerMobileNo</jsonpath>
+        </setHeader>
+        <setHeader name="pinOtp">
+            <jsonpath>$.OtpPin</jsonpath>
+        </setHeader>
+        <setBody>
+            <simple>{"MethodId": "2","TellerID": "11","CustomerMobileNo": "${header.numberMob}","EventId": "","VerifyParam": {"RequestId": "${header.RequestId}","OtpPin": "${header.pinOtp}"}}</simple>
+        </setBody> <!-- numberMob -->
+        <removeHeader name="CamelHttpMethod" />
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="charset" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <setHeader name="CamelHttpMethod">
+            <simple>POST</simple>
+        </setHeader>
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_CMSAdichitraguptaTransaction QUARK_STEP_7 ESB_CMSAdichitraguptaOTP REQUEST SENT FOR OTP VERIFICATION_${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <to uri="{{ESB_SMSService_FINO_URL_{{currentSetUp}}}}" />
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_CMSAdichitraguptaTransaction QUARK_STEP_8 ESB_CMSAdichitraguptaOTP RESPONSE RECEIVE FROM OTP VERIFICATION_${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <doTry>
+            <setHeader name="otpRespCode">
+                <jsonpath>$.ResponseCode</jsonpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaOTP Exception occured: #${exception}" />
+                <setHeader name="otpRespCode">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <choice>
+            <when>
+                <simple>${header.otpRespCode} == '000'</simple>
+                <setHeader name="authRespCode">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"0","responseMessage":"OTP Verification Successful"}</simple>
+                </setHeader>
+            </when>
+            <otherwise>
+                <setHeader name="authRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"1","responseMessage":"otp authentication failed"}</simple>
+                </setHeader>
+            </otherwise>
+        </choice>
+    </route> <!--
+    Aadhar Authentication Route -->
+    <route id="RT4_Payments_AadharRoute" streamCache="true">
+        <from uri="direct:AadharAuthentication" />
+        <setBody>
+            <simple>${header.AadharBody}</simple>
+        </setBody>
+        <removeHeader name="CamelHttpMethod" />
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="Connect*" />
+        <removeHeader name="charset" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+        <setHeader name="CamelHttpMethod">
+            <simple>POST</simple>
+        </setHeader>
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_CMSAdichitraguptaTransaction QUARK_STEP_9 ESB_CMSAdichitraguptaAadhar REQUEST SENT FOR AADHAAR VERIFICATION_${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <to
+            uri="{{FINO_AADHARURL_{{currentSetUp}}}}?dataFormat=MESSAGE&amp;headerFilterStrategy=#fisHeaderFilter" />
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_CMSAdichitraguptaTransaction QUARK_STEP_10 ESB_CMSAdichitraguptaAadhar RESPONSE RECEIVED FOR AADHAAR VERIFICATION_${body} "
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <setBody>
+            <xpath>/*/*/xs:Auth_XML_CreationLevel_AUAResponse/xs:Auth_XML_CreationLevel_AUAResult/text()</xpath>
+        </setBody>
+        <convertBodyTo type="java.lang.String" />
+        <to uri="log:before?showHeaders=true" /> <!-- Check for Aadhar Validation -->
+        <doTry>
+            <setHeader name="authResCode1">
+                <xpath>AuthRes/@ret</xpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaAadhar Exception occured: #${exception}" />
+                <setHeader name="authResCode1">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaAadhar Aadhar Verification Value:-${header.authResCode1}_${header.MapperID}" />
+        <choice>
+            <when>
+                <simple>${header.authResCode1}== 'y'</simple>
+                <setHeader name="authRespCode">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"0","responseMessage":"Aadhaar Authentication Successful"}</simple>
+                </setHeader>
+            </when>
+            <otherwise>
+                <setHeader name="authRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"2","responseMessage":"Aadhaar Authentication Failed"}</simple>
+                </setHeader>
+                <setBody>
+                    <simple>{"returnCode":"2","responseMessage":"Aadhaar Authentication Failed"}</simple>
+                </setBody>
+            </otherwise>
+        </choice>
+    </route>
+    <route id="RT5_Payments_FPRoute" streamCache="true">
+        <from uri="direct:FPAuthentication" />
+        <setBody>
+            <simple>${header.FPBody}</simple>
+        </setBody>
+        <marshal>
+            <json />
+        </marshal>
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="charset" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <setHeader name="CamelHttpMethod">
+            <simple>POST</simple>
+        </setHeader>
+        <log
+            message=" X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_CMSAdichitraguptaTransaction QUARK_STEP_11 ESB_CMSAdichitragupta REQUEST SENT FOR FP AUTHENTICATION_${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <to uri="{{FINO_FPURL_{{currentSetUp}}}}?headerFilterStrategy=#fisHeaderFilter" />
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_CMSAdichitraguptaTransaction QUARK_STEP_12 ESB_CMSAdichitragupta RESPONSE RECEIVED FOR FP AUTHENTICATION_${body} "
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <doTry>
+            <setHeader name="Ftp_code">
+                <jsonpath>$.ResponseCode</jsonpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="Exception occured: #${exception}" />
+                <setHeader name="Ftp_code">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <choice>
+            <when>
+                <simple>${header.Ftp_code} == '00' </simple>
+                <setHeader name="authRespCode">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"0","responseMessage":"FP Authentication Successful"}</simple>
+                </setHeader>
+                <doTry>
+                    <setHeader name="authID_Code">
+                        <jsonpath>$.ResponseData</jsonpath>
+                    </setHeader>
+                    <doCatch>
+                        <exception>java.lang.Exception</exception>
+                        <log message="txn_${header.authID_Code}" />
+                        <setHeader name="authID_Code">
+                            <simple>${date:now:yyyy-MM-dd}</simple>
+                        </setHeader>
+                    </doCatch>
+                </doTry>
+            </when>
+            <otherwise>
+                <setHeader name="authRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"3","responseMessage":"FP Verification Failed"}</simple>
+                </setHeader>
+            </otherwise>
+        </choice>
+    </route>
+    <route id="RT6_Transaction" streamCache="true">
+        <from uri="direct:debitCreditRoute" />
+        <doTry>
+            <setBody>
+                <simple>${header.postTransaction}</simple>
+            </setBody>
+            <bean ref="AccountTxn" method="AccountTxn" />
+            <marshal>
+                <json />
+            </marshal>
+            <removeHeader name="postTransaction" />
+            <choice>
+                <when>
+                    <simple>${header.DBFlag} == 'Y'</simple>
+                    <bean ref="requestProcessortxn" method="correctLDN" />
+                    <setHeader name="TransactionQueryReq">
+                        <simple>{"Insert_Type": "0","requestType": "1","ACCTNUM": "${header.AccDetails}", "PCODE": "${header.TranType}", "MSGTYPE": "0","TRACE": "${header.referenceNo}","AMOUNT": "${header.amt}","TERMID": "${header.RequestorId}", "CH_AMOUNT": "", "AMOUNT_EQUIV": "","Support_data": "${header.supportData}${exchangeProperty.supportDataLDN}", "Credit_Debit_Flag": "C","appId": "${header.appId}", "isInclusive": "${header.isInclusive}","Method_Id": "${header.MethodId}","Source_Id": "","Biller_Id": "","Payment_Channel_Id": "${header.Payment_Channel_Id}","TXNSRC":"${header.TXNSRC}","TXNDEST":"{{esbHost}}","Payment_Type": "CMS","MerchantMobileNo": "null","RemeMobileNo": "null","RemeName": "null","BeneBankName": "null","BeneBranchName": "null","X_CORRELATION_ID":"${header.X-Correlation-Id}","CostCenter":"${header.costCenter}","Layer":"ESB","MerchantMobileNo":"${header.beneficiaryMobile}","RemeMobileNo":"${header.remitterMobile}"} </simple>
+                    </setHeader>
+                    <doTry>
+                        <to uri="seda:insertrequestresponse?waitForTaskToComplete=Never" />
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta TransactionQueueRequest_Exception_ESB_CMSAdichitragupta_ ${header.TransactionQueryReq}" />
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta Exception Occured while que insert: ${exception}" />
+                            <removeHeader name="TransactionQueryReq" />
+                        </doCatch>
+                    </doTry>
+                </when>
+            </choice>
+            <!-- <bean ref="requestProcessortxn" method="process" /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_12 ESB_CMSAdichitragupta REQUEST SENT TO CBS_${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <bean ref="requestProcessortxn" method="process" />
+            <!-- <to
+            uri="cxfrs:bean:rsPostTransaction?throwExceptionOnFailure=false&amp;headerFilterStrategy=#fisHeaderFilter"
+            /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_13 ESB_CMSAdichitragupta RESPONSE RECEIVED FROM CBS_${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <log message="ESB_CMSAdichitragupta RESPONSE RECEIVED FROM CBS_${body}" />
+            <convertBodyTo type="java.lang.String" />
+            <choice>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == '200'</simple>
+                    <setHeader name="txnRespCode">
+                        <jsonpath>$.returnCode</jsonpath>
+                    </setHeader>
+                    <choice>
+                        <when>
+                            <simple>${header.txnRespCode} == '0'</simple>
+                            <setHeader name="PostTxnResponse">
+                                <simple>${body}</simple>
+                            </setHeader>
+                            <setHeader name="paymentReqResponseCode">
+                                <simple>Success</simple>
+                            </setHeader>
+                            <setHeader name="responseMsg">
+                                <simple>SUCCESS</simple>
+                            </setHeader>
+                            <wireTap uri="direct:DBResponseInsert" />
+                            <choice>
+                                <when>
+                                    <simple>${header.COLAIdentifier} == '1' || ${header.COLAIdentifier} == 'COLA'</simple>
+                                    <to uri="seda:colacall?waitForTaskToComplete=Never" />
+                                </when>
+                            </choice>
+                        </when>
+                        <otherwise>
+                            <setHeader name="txnRespCode">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="Content-Type">
+                                <simple>application/json</simple>
+                            </setHeader>
+                            <setHeader name="responseMsg">
+                                <jsonpath>$.responseMessage</jsonpath>
+                            </setHeader>
+                            <setHeader name="PostTxnResponse">
+                                <simple>${body}</simple>
+                            </setHeader>
+                            <setHeader name="paymentReqResponseCode">
+                                <simple>FAILED</simple>
+                            </setHeader>
+                            <wireTap uri="direct:DBResponseInsert" />
+                        </otherwise>
+                    </choice>
+                </when>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == '401' || ${header.CamelHttpResponseCode} == '411'</simple>
+                    <setHeader name="txnRespCode">
+                        <simple>1</simple>
+                    </setHeader>
+                    <doTry>
+                        <setHeader name="returnCode">
+                            <jsonpath>$.returnCode</jsonpath>
+                        </setHeader>
+                        <setHeader name="responseMsg">
+                            <jsonpath>$.responseMessage</jsonpath>
+                        </setHeader>
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <setHeader name="returnCode">
+                                <simple>${header.CamelHttpResponseCode}</simple>
+                            </setHeader>
+                            <setHeader name="responseMsg">
+                                <simple>Internal Server Error</simple>
+                            </setHeader>
+                        </doCatch>
+                        <doFinally>
+                            <setHeader name="Content-Type">
+                                <simple>application/json</simple>
+                            </setHeader>
+                            <setBody>
+                                <simple>{"returnCode":"${header.returnCode}","responseMessage":"${header.responseMsg}"}</simple>
+                            </setBody>
+                            <setHeader name="paymentReqResponseCode">
+                                <simple>FAILED</simple>
+                            </setHeader>
+                            <wireTap uri="direct:DBResponseInsert" />
+                        </doFinally>
+                    </doTry>
+                    <setHeader name="CamelHttpResponseCode">
+                        <simple>200</simple>
+                    </setHeader>
+                    <setHeader name="PostTxnResponse">
+                        <simple>${body}</simple>
+                    </setHeader>
+                </when>
+                <otherwise>
+                    <setHeader name="txnRespCode">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setBody>
+                        <simple>{"returnCode":"1","responseMessage":"Server Error Please Try aftre some times!"}</simple>
+                    </setBody>
+                    <setHeader name="PostTxnResponse">
+                        <simple>${body}</simple>
+                    </setHeader>
+                    <wireTap uri="direct:DBResponseInsert" />
+                    <to uri="seda:TxnReversalCall?waitForTaskToComplete=Never" />
+                </otherwise>
+            </choice>
+            <doCatch>
+                <exception>java.net.SocketTimeoutException</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_13 ESB_CMSAdichitragupta SocketTimeOut Exception Occured while debitCreditRoute: ${exception.stacktrace}__RRN__${header.referenceNo}" />
+                <setHeader name="txnRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setBody>
+                    <simple>{"returnCode":"1","responseMessage":"SocketTimeOut Exception In CBS"}</simple>
+                </setBody>
+                <setHeader name="PostTxnResponse">
+                    <simple>${body}</simple>
+                </setHeader>
+                <setHeader name="paymentReqResponseCode">
+                    <simple>FAILED</simple>
+                </setHeader>
+                <setHeader name="responseMsg">
+                    <simple>SocketTimeOutException</simple>
+                </setHeader>
+                <to uri="seda:TxnReversalCall?waitForTaskToComplete=Never" />
+                <wireTap uri="direct:DBResponseInsert" />
+            </doCatch>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="Exception Occured while debitCreditRoute: ${exception.stacktrace}" />
+                <setHeader name="txnRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setBody>
+                    <simple>{"returnCode":"1","responseMessage":"Exception Occur In CBS"}</simple>
+                </setBody>
+                <setHeader name="PostTxnResponse">
+                    <simple>${body}</simple>
+                </setHeader>
+                <setHeader name="paymentReqResponseCode">
+                    <simple>FAILED</simple>
+                </setHeader>
+                <setHeader name="responseMsg">
+                    <simple>ExceptionOccured</simple>
+                </setHeader>
+                <to uri="seda:TxnReversalCall?waitForTaskToComplete=Never" />
+                <wireTap uri="direct:DBResponseInsert" />
+            </doCatch>
+        </doTry>
+    </route>
+    <route id="ESB_CMSAdiChitraGuptaTransaction_cola" streamCache="true">
+        <from uri="seda:colacall?concurrentConsumers={{maxConcurrentConsumers}}" />
+        <setBody>
+            <simple>{"transactionId": ${header.COLA_RefNo},"remarks": "${header.remarks}","transactionOldStatusId": 1,"transactionNewStatusId": 2}</simple>
+        </setBody>
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <removeHeader name="Camel*" />
+        <removeHeader name="restlet*" />
+        <removeHeader name="http*" />
+        <doTry>
+            <!-- <bean ref="txnrequestProcessor" method="updateColaStatus" /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_14 ESB_CMSAdichitragupta REQUEST SENT TO OLA for Status Update_${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <bean ref="txnrequestProcessor" method="updateColaStatus" />
+            <!-- <to pattern="InOut"
+            uri="cxfrs:bean:rsColaStatusUpdate?headerFilterStrategy=#CXFHeaderFilter&amp;throwExceptionOnFailure=false"
+            /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_15 ESB_CMSAdichitragupta Response Received from OLA for Status Update_${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <choice>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == '200'</simple>
+                    <convertBodyTo type="java.lang.String" />
+                </when>
+                <otherwise>
+                    <setBody>
+                        <simple> {"returnCode":"${header.CamelHttpResponseCode}","responseMessage":"Response Code ${header.CamelHttpResponseCode} from Cola"} </simple>
+                    </setBody>
+                </otherwise>
+            </choice>
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_CMSAdichitragupta Response Received from OLA for Status Update_${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <doCatch>
+                <exception>java.net.SocketTimeoutException</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_15 ESB_CMSAdichitragupta RESPONSE SENT Exception Occured_${exception.stacktrace} "
+                    loggingLevel="INFO" logName="com.fino.asynclog" />
+                <setBody>
+                    <simple>{"returnCode":"998","responseMessage":"Time Out From COLA for status update"}</simple>
+                </setBody>
+            </doCatch>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_15 ESB_CMSAdichitragupta RESPONSE SENT Exception Occured_${exception.stacktrace} "
+                    loggingLevel="INFO" logName="com.fino.asynclog" />
+                <setBody>
+                    <simple> {"returnCode":"999","responseMessage":"Error Occurred from COLA Status Update"}</simple>
+                </setBody>
+            </doCatch>
+        </doTry>
+    </route> <!--
+    Cash Deposit Response Insert Route -->
+    <route id="RT7_Payments_DBResInsert" streamCache="true">
+        <from uri="direct:DBResponseInsert" />
+        <choice>
+            <when>
+                <simple>${header.DBFlag} == 'Y'</simple>
+                <setHeader name="TransactionQueryReq">
+                    <simple>{"Insert_Type": "1","Request_Type": "1","ACCTNUM": "${header.AccDetails}","PCODE": "${header.TranType}","MSGTYPE": "0","RESPCODE": "${header.txnRespCode}","Response_Msg": "${header.responseMsg}","TRACE": "${header.referenceNo}","REFNUM": "${header.cbsTxnReferenceNo}","AMOUNT": "${header.amt}","TERMID": "${header.RequestorId}","Ledger_Balance": "${header.availableBalance}","GL_Ledger_Balance": "${header.GLavailableBalance}","Payment_Status": "${header.paymentReqResponseCode}","Bene_AccNo": "null","BeneIFSC": "null","File_Id": "0","BeneName": "null","X_CORRELATION_ID":"${header.X-Correlation-Id}"}</simple>
+                </setHeader>
+                <doTry>
+                    <convertBodyTo type="java.lang.String" />
+                    <to uri="seda:insertrequestresponse?waitForTaskToComplete=Never" />
+                    <removeHeader name="responseMsg" />
+                    <removeHeader name="cbsTxnReferenceNo" />
+                    <removeHeader name="GlAvailableBalance" />
+                    <removeHeader name="paymentReqResponseCode" />
+                    <doCatch>
+                        <exception>java.lang.Exception</exception>
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta TransactionQueueResponse_Exception_ESB_CMSAdichitragupta_ ${header.TransactionQueryReq}" />
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta Exception Occured while que insert: ${exception}" />
+                        <removeHeader name="TransactionQueryReq" />
+                    </doCatch>
+                </doTry>
+            </when>
+        </choice>
+    </route> <!--
+    Cash Deposit Response Insert Route -->
+    <route id="RT8_Payments_DBResRevInsert" streamCache="true">
+        <from uri="direct:DBResponseReversalInsert" />
+        <choice>
+            <when>
+                <simple>${header.DBFlag} == 'Y'</simple>
+                <setHeader name="TransactionQueryReq">
+                    <simple>{"Insert_Type": "1","Request_Type": "1","ACCTNUM": "${header.AccDetails}","PCODE": "${header.TranType}","MSGTYPE": "1","RESPCODE": "${header.txnRespCode}","Response_Msg": "${header.responseMsg}","TRACE": "${header.referenceNo}","REFNUM": "${header.cbsTxnReferenceNo}","AMOUNT": "${header.amt}","TERMID": "${header.RequestorId}","Ledger_Balance": "${header.availableBalance}","GL_Ledger_Balance": "${header.GLavailableBalance}","Payment_Status": "${header.paymentReqResponseCode}","Bene_AccNo": "null","BeneIFSC": "null","File_Id": "0","BeneName": "null","X_CORRELATION_ID":"${header.X-Correlation-Id}"}</simple>
+                </setHeader>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} |TransactionQueueResponse_CBS_Reversal_ESB_CMSAdichitragupta_ ${header.TransactionQueryReq}" />
+                <doTry>
+                    <convertBodyTo type="java.lang.String" />
+                    <to uri="seda:insertrequestresponse?waitForTaskToComplete=Never" />
+                    <removeHeader name="responseMsg" />
+                    <removeHeader name="cbsTxnReferenceNo" />
+                    <removeHeader name="GlAvailableBalance" />
+                    <removeHeader name="paymentReqResponseCode" />
+                    <doCatch>
+                        <exception>java.lang.Exception</exception>
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta TransactionQueueResponse_Exception_Reversal_ESB_CMSAdichitragupta_ ${header.TransactionQueryReq}" />
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta Exception Occured while que insert: ${exception}" />
+                        <removeHeader name="TransactionQueryReq" />
+                    </doCatch>
+                </doTry>
+            </when>
+        </choice>
+    </route> <!--
+    Transaction Reversal Call -->
+    <route id="RT9_Payments_TxnReversalCall" streamCache="true">
+        <from uri="seda:TxnReversalCall" />
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta Reversal Transaction Initiated" />
+        <setHeader name="msgType">
+            <simple>1</simple>
+        </setHeader>
+        <setBody>
+            <simple>{"appId":"${header.appId}","analysisFlag":"0","reversalFlag":"F","referenceNo":"${header.referenceNo}","isInclusive":0,"isClubbed":0}</simple>
+        </setBody>
+        <choice>
+            <when>
+                <simple>${header.DBFlag} == 'Y'</simple>
+                <setHeader name="TransactionQueryReq">
+                    <simple>{"Insert_Type": "0","requestType": "1","ACCTNUM": "${header.AccDetails}", "PCODE": "${header.TranType}", "MSGTYPE": "1","TRACE": "${header.referenceNo}","AMOUNT": "${header.amt}","TERMID": "${header.RequestorId}", "CH_AMOUNT": "", "AMOUNT_EQUIV": "","Support_data": "${header.supportData}", "Credit_Debit_Flag": "C","appId": "${header.appId}", "isInclusive": "${header.isInclusive}","Method_Id": "${header.MethodId}","Source_Id": "","Biller_Id": "","Payment_Channel_Id": "${header.Payment_Channel_Id}","TXNSRC":"${header.TXNSRC}","TXNDEST":"{{esbHost}}","Payment_Type": "CMS","MerchantMobileNo": "null","RemeMobileNo": "null","RemeName": "null","BeneBankName": "null","BeneBranchName": "null","X_CORRELATION_ID":"${header.X-Correlation-Id}","CostCenter":"${header.costCenter}","Layer":"ESB","MerchantMobileNo":"${header.beneficiaryMobile}","RemeMobileNo":"${header.remitterMobile}"} </simple>
+                </setHeader>
+                <doTry>
+                    <convertBodyTo type="java.lang.String" />
+                    <to uri="seda:insertrequestresponse?waitForTaskToComplete=Never" />
+                    <doCatch>
+                        <exception>java.lang.Exception</exception>
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta TransactionQueueRequest_Exception_ESB_CMSAdichitragupta_ ${header.TransactionQueryReq}" />
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta Exception Occured while que insert: ${exception}" />
+                        <removeHeader name="TransactionQueryReq" />
+                    </doCatch>
+                </doTry>
+            </when>
+        </choice> <!--
+        <bean ref="requestProcessortxn" method="process" /> -->
+        <!-- <bean ref="UpdateRFUDetails" method="UpdateRfu" /> -->
+        <doTry>
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_16 ESB_CMSAdichitragupta Request SENT TO CBS FOR Reversal Transaction_${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <setProperty name="revbody">
+                <simple>${body}</simple>
+            </setProperty>
+            <to uri="log:before?showHeaders=true" />
+            <!-- <bean ref="UpdateRFUDetails" method="UpdateRfu" /> -->
+            <bean ref="requestProcessortxn" method="process" />
+            <!-- <to
+            uri="cxfrs:bean:rsPostTransaction?throwExceptionOnFailure=false&amp;headerFilterStrategy=#fisHeaderFilter"
+            /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_17 ESB_CMSAdichitragupta Response Receive From CBS of Reversal Transaction_${header.CamelHttpResponseCode}--${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <choice>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == '200'</simple>
+                    <setHeader name="returenCode">
+                        <jsonpath>$.returnCode</jsonpath>
+                    </setHeader>
+                    <choice>
+                        <when>
+                            <simple>${header.returenCode} == 0 || ${header.returenCode} == '0'</simple>
+                            <setHeader name="cbsTxnReferenceNo">
+                                <jsonpath>$.cbsTxnReferenceNo</jsonpath>
+                            </setHeader>
+                            <setHeader name="availableBalance">
+                                <jsonpath>$.balancesList[0].availableBalance</jsonpath>
+                            </setHeader>
+                            <setHeader name="GLavailableBalance">
+                                <jsonpath>$.balancesList[1].availableBalance</jsonpath>
+                            </setHeader>
+                            <setHeader name="PaymentStatus">
+                                <simple>SUCCESS</simple>
+                            </setHeader>
+                            <setHeader name="responseMsg">
+                                <simple>SUCCESS</simple>
+                            </setHeader>
+                            <setHeader name="txnRespCode">
+                                <simple>${header.returenCode}</simple>
+                            </setHeader>
+                            <wireTap uri="direct:DBResponseReversalInsert" />
+                            <setHeader name="UpdateRFU">
+                                <simple>{"referenceNo": "${header.trans_ref_no}","rfuField": "ZRFUN1","rfuValue": "1"}</simple>
+                            </setHeader>
+                            <to uri="seda:UpdateRFUcall?waitForTaskToComplete=Never" />
+                        </when>
+                        <when>
+                            <simple>${header.returenCode} == 2042 || ${header.returenCode} == '2042'</simple>
+                            <setHeader name="responseMsg">
+                                <jsonpath>$.responseMessage</jsonpath>
+                            </setHeader>
+                            <setHeader name="PaymentStatus">
+                                <simple>FAILED</simple>
+                            </setHeader>
+                            <setHeader name="txnRespCode">
+                                <simple>${header.returenCode}</simple>
+                            </setHeader>
+                            <wireTap uri="direct:DBResponseReversalInsert" />
+                            <bean ref="txnrequestProcessor" method="counter" />
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | COUNTER READING--@@@@ ${header.RCounter}" />
+                            <choice>
+                                <when>
+                                    <simple>${header.RCounter} &lt; '3'</simple>
+                                    <setBody>
+                                        <simple>${exchangeProperty.revbody}</simple>
+                                    </setBody>
+                                    <to uri="seda:TxnReversalCall?waitForTaskToComplete=Never" />
+                                </when>
+                            </choice>
+                        </when>
+                        <otherwise>
+                            <setHeader name="responseMsg">
+                                <jsonpath>$.responseMessage</jsonpath>
+                            </setHeader>
+                            <setHeader name="PaymentStatus">
+                                <simple>FAILED</simple>
+                            </setHeader>
+                            <setHeader name="txnRespCode">
+                                <simple>${header.returenCode}</simple>
+                            </setHeader>
+                            <wireTap uri="direct:DBResponseReversalInsert" />
+                        </otherwise>
+                    </choice>
+                </when>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == '500' || ${header.CamelHttpResponseCode} == '401' || ${header.CamelHttpResponseCode} == '404'</simple>
+                    <setHeader name="CamelHttpResponseCode">
+                        <simple>200</simple>
+                    </setHeader>
+                    <setHeader name="txnRespCode">
+                        <simple>${header.CamelHttpResponseCode}</simple>
+                    </setHeader>
+                    <doTry>
+                        <setHeader name="responseMsg">
+                            <simple>Internal Server Error</simple>
+                        </setHeader>
+                        <setHeader name="PostTxnResponse">
+                            <simple>${body}</simple>
+                        </setHeader>
+                        <setHeader name="paymentReqResponseCode">
+                            <simple>FAILED</simple>
+                        </setHeader>
+                        <setHeader name="message">
+                            <jsonpath>$.message</jsonpath>
+                        </setHeader>
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta Exception Occured while : ${exception}" />
+                        </doCatch>
+                        <doFinally>
+                            <setBody>
+                                <simple>{"returnCode":"1","responseMessage":"${header.message}"}</simple>
+                            </setBody>
+                            <setHeader name="PaymentStatus">
+                                <simple>FAILED</simple>
+                            </setHeader>
+                            <to uri="direct:DBResponseReversalInsert" />
+                        </doFinally>
+                    </doTry>
+                </when>
+                <otherwise>
+                    <setHeader name="txnRespCode">
+                        <simple>${header.CamelHttpResponseCode}</simple>
+                    </setHeader>
+                    <doTry>
+                        <setHeader name="responseMsg">
+                            <simple>Error Occured</simple>
+                        </setHeader>
+                        <setHeader name="PostTxnResponse">
+                            <simple>${body}</simple>
+                        </setHeader>
+                        <setHeader name="paymentReqResponseCode">
+                            <simple>FAILED</simple>
+                        </setHeader>
+                        <setHeader name="message">
+                            <jsonpath>$.message</jsonpath>
+                        </setHeader>
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta Exception Occured while : ${exception}" />
+                        </doCatch>
+                        <doFinally>
+                            <setBody>
+                                <simple>{"returnCode":"1","responseMessage":"${header.message}"}</simple>
+                            </setBody>
+                            <setHeader name="PaymentStatus">
+                                <simple>FAILED</simple>
+                            </setHeader>
+                            <to uri="direct:DBResponseReversalInsert" />
+                        </doFinally>
+                    </doTry>
+                </otherwise>
+            </choice>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <setHeader name="responseMsg">
+                    <simple>Socket Timeout</simple>
+                </setHeader>
+                <setHeader name="PaymentStatus">
+                    <simple>FAILED</simple>
+                </setHeader>
+                <setHeader name="txnRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <wireTap uri="direct:DBResponseReversalInsert" />
+                <bean ref="txnrequestProcessor" method="counter" />
+                <choice>
+                    <when>
+                        <simple>${header.RCounter} &lt; '3'</simple>
+                        <log
+                            message="ESB_CMSAdichitragupta Inside Reversal Counter_${header.RCounter}" />
+                        <setBody>
+                            <simple>${exchangeProperty.revbody}</simple>
+                        </setBody>
+                        <to uri="seda:TxnReversalCall" />
+                    </when>
+                </choice>
+            </doCatch>
+        </doTry>
+    </route>
+    <route id="seda_ESB_CMSAdichitraguptaTransaction_sms">
+        <from uri="seda:smsService_url?concurrentConsumers={{minConcurrentConsumers}}" />
+        <setBody>
+            <simple>{"MethodId":"3","TellerID":"${header.RequestorId}","CustomerMobileNo":"${header.MobileNumForSMS}","EventId":"","NotifyParam":{"TemplateId":"2975","@SMSParam1":"${header.amt}","@SMSParam2":"${exchangeProperty.TokenID}","@SMSParam3":"${exchangeProperty.branchId}","@SMSParam4":"${header.MobileNumForSMS}","@SMSParam8":"${date:now:yyyy-MM-dd}","@SMSParam9":"${date:now:HH:mm:ss}","@SMSParam5":"${header.trans_ref_no}","@shortLink":"${exchangeProperty.shortLink}"}}</simple>
+        </setBody>
+        <removeHeaders pattern="*"
+            excludePattern="X-Correlation-Id|RequestorId|CheckIssuanceDMS|authRespCode|cbsRespCode|authResponse|CBSResponse|DMSCheckIssueBit|CBSCheckIssueBit|CustomerAuthBit|updateCustomerBit|updateCustrespCode|token12" />
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <setHeader name="CamelHttpMethod">
+            <simple>POST</simple>
+        </setHeader>
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_18 ESB_CMSAdichitragupta REQUEST SENT FOR SMS _ ${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <to
+            uri="{{ESB_SMSService_FINO_URL_{{currentSetUp}}}}?headerFilterStrategy=#finoHeaderFilter&amp;httpClientConfigurerRef=myHttpClientConfigurer&amp;soTimeout={{DEFAULT_TIMEOUT}}" />
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_19 ESB_CMSAdichitragupta Response from SMS_ ${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <removeHeaders pattern="*"
+            excludePattern="X-Correlation-Id|RequestorId|CheckIssuanceDMS|authRespCode|cbsRespCode|authResponse|CBSResponse|DMSCheckIssueBit|CBSCheckIssueBit|CustomerAuthBit|updateCustomerBit|updateCustrespCode" />
+    </route>
+    <route streamCache="true" id="RT9_Payments_Email">
+        <from uri="seda:loanCollectionEmail?concurrentConsumers={{minConcurrentConsumers}}" />
+        <to
+            uri="sql:select * from CMSEmailIds with (nolock) where ClientId = :#${header.ClientId}" />
+        <bean ref="AccountTxn" method="getEmailId" />
+        <setBody>
+            <simple>{"EmailId":"${header.EmailTo}","CCEmailId":"${header.EmailCC}","EmailBCC":"${header.EmailBCC}","Subject":"Adichitragupta Payments","EmailTempId":"1125","Attachments":[],"EmailParam":[{"ParamName":"@AgentID","ParamValue":"${exchangeProperty.TokenID}"},{"ParamName":"@branchId","ParamValue":"${exchangeProperty.branchId}"},{"ParamName":"@MobileNumber","ParamValue":"${header.MobileNumForSMS}"},{"ParamName":"@Amount","ParamValue":"${header.amt}"},{"ParamName":"@Date","ParamValue":"${date:now:yyyy-MM-dd}"},{"ParamName":"@Time","ParamValue":"${date:now:HH:mm:ss}"},{"ParamName":"@TransactionID","ParamValue":"${header.trans_ref_no}"}]}</simple>
+        </setBody>
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_20 ESB_CMSAdichitragupta Request Sent To EMAIL System for UPDATE_${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+        <to
+            uri="{{FINO_EMAILURL_{{currentSetUp}}}}?headerFilterStrategy=#finoHeaderFilter&amp;soTimeout={{DEFAULT_TIMEOUT}}" />
+        <log
+            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_21 ESB_CMSAdichitragupta Response Received From EMAIL System for UPDATE_${body}"
+            loggingLevel="INFO" logName="com.fino.asynclog" />
+    </route>
+    <route id="RT12_Payments_UpdateRFU" streamCache="true">
+        <from uri="seda:UpdateRFUcall?concurrentConsumers={{minConcurrentConsumers}}" />
+        <doTry>
+            <setBody>
+                <simple>${header.UpdateRFU}</simple>
+            </setBody>
+            <!-- <bean ref="UpdateRFUDetails" method="UpdateRfu" /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_22 ESB_CMSAdichitragupta Request SENT TO CBS FOR UPDATE RFU_${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <bean ref="UpdateRFUDetails" method="UpdateRfu" />
+            <!-- <to pattern="InOut"
+            uri="cxfrs:bean:rsUpdateRFU?throwExceptionOnFailure=false&amp;headerFilterStrategy=#fisHeaderFilter"
+            /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitraguptaTransaction QUARK_STEP_23 ESB_CMSAdichitragupta Response Receive From CBS of UPDATE RFU_${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta Exception Occured For CBS of UPDATE RFU_${body}"
+                    loggingLevel="INFO" logName="com.fino.asynclog" />
+            </doCatch>
+        </doTry>
+    </route>
+    <route id="TransactionExceptionDbInsertion">
+        <from uri="seda:insertrequestresponse" />
+        <doTry>
+            <setBody>
+                <simple>${header.TransactionQueryReq}</simple>
+            </setBody>
+            <unmarshal>
+                <json />
+            </unmarshal>
+            <!-- <log message="X-Correlation-Id_${header.X-Correlation-Id} |
+            UseRId_${header.RequestorId} | ESB_CMSAdichitragupta Request Sent for Database Insertion
+            Request _${header.TransactionQueryReq}" /> -->
+            <setHeader name="Insert_Type">
+                <simple>${body[Insert_Type]}</simple>
+            </setHeader>
+            <choice>
+                <when>
+                    <simple>${header.Insert_Type} == '0'</simple>
+                    <removeHeader name="TransactionQueryReq" />
+                    <setHeader name="requestType">
+                        <simple>${body[requestType]}</simple>
+                    </setHeader>
+                    <setHeader name="ACCTNUM">
+                        <simple>${body[ACCTNUM]}</simple>
+                    </setHeader>
+                    <setHeader name="PAN">
+                        <simple>${body[PAN]}</simple>
+                    </setHeader>
+                    <setHeader name="PCODE">
+                        <simple>${body[PCODE]}</simple>
+                    </setHeader>
+                    <setHeader name="MSGTYPE">
+                        <simple>${body[MSGTYPE]}</simple>
+                    </setHeader>
+                    <setHeader name="TRACE">
+                        <simple>${body[TRACE]}</simple>
+                    </setHeader>
+                    <setHeader name="AMOUNT">
+                        <simple>${body[AMOUNT]}</simple>
+                    </setHeader>
+                    <setHeader name="TERMID">
+                        <simple>${body[TERMID]}</simple>
+                    </setHeader>
+                    <setHeader name="CH_AMOUNT">
+                        <simple>${body[CH_AMOUNT]}</simple>
+                    </setHeader>
+                    <setHeader name="AMOUNT_EQUIV">
+                        <simple>${body[AMOUNT_EQUIV]}</simple>
+                    </setHeader>
+                    <setHeader name="Support_data">
+                        <simple>${body[Support_data]}</simple>
+                    </setHeader>
+                    <setHeader name="Credit_Debit_Flag">
+                        <simple>${body[Credit_Debit_Flag]}</simple>
+                    </setHeader>
+                    <setHeader name="appId">
+                        <simple>${body[appId]}</simple>
+                    </setHeader>
+                    <setHeader name="isInclusive">
+                        <simple>${body[isInclusive]}</simple>
+                    </setHeader>
+                    <setHeader name="Split_Sequence">
+                        <simple>${body[Split_Sequence]}</simple>
+                    </setHeader>
+                    <setHeader name="isInclusive">
+                        <simple>${body[isInclusive]}</simple>
+                    </setHeader>
+                    <setHeader name="Method_Id">
+                        <simple>${body[Method_Id]}</simple>
+                    </setHeader>
+                    <setHeader name="Source_Id">
+                        <simple>${body[Source_Id]}</simple>
+                    </setHeader>
+                    <setHeader name="Biller_Id">
+                        <simple>${body[Biller_Id]}</simple>
+                    </setHeader>
+                    <setHeader name="Payment_Channel_Id">
+                        <simple>${body[Payment_Channel_Id]}</simple>
+                    </setHeader>
+                    <setHeader name="Payment_Type">
+                        <simple>${body[Payment_Type]}</simple>
+                    </setHeader>
+                    <setHeader name="MerchantMobileNo">
+                        <simple>${body[MerchantMobileNo]}</simple>
+                    </setHeader>
+                    <setHeader name="RemeMobileNo">
+                        <simple>${body[RemeMobileNo]}</simple>
+                    </setHeader>
+                    <setHeader name="RemeName">
+                        <simple>${body[RemeName]}</simple>
+                    </setHeader>
+                    <setHeader name="BeneBankName">
+                        <simple>${body[BeneBankName]}</simple>
+                    </setHeader>
+                    <setHeader name="BeneBranchName">
+                        <simple>${body[BeneBranchName]}</simple>
+                    </setHeader>
+                    <setHeader name="X_CORRELATION_ID">
+                        <simple>${body[X_CORRELATION_ID]}</simple>
+                    </setHeader>
+                    <setHeader name="Parent_RRN">
+                        <simple>${body[Parent_RRN]}</simple>
+                    </setHeader>
+                    <setHeader name="TXNSRC">
+                        <simple>${body[TXNSRC]}</simple>
+                    </setHeader>
+                    <setHeader name="TXNDEST">
+                        <simple>${body[TXNDEST]}</simple>
+                    </setHeader>
+                    <setHeader name="ACCEPTORNAME">
+                        <simple>${body[ACCEPTORNAME]}</simple>
+                    </setHeader>
+                    <setHeader name="MERCHANT_TYPE">
+                        <simple>${body[MERCHANT_TYPE]}</simple>
+                    </setHeader>
+                    <setHeader name="ACQ_CURRENCY_CODE">
+                        <simple>${body[ACQ_CURRENCY_CODE]}</simple>
+                    </setHeader>
+                    <setHeader name="Charges">
+                        <simple>${body[Charges]}</simple>
+                    </setHeader>
+                    <setHeader name="CostCenter">
+                        <simple>${body[CostCenter]}</simple>
+                    </setHeader>
+                    <setHeader name="Layer">
+                        <simple>${body[Layer]}</simple>
+                    </setHeader>
+                    <setHeader name="Updation_DATE_TIME">
+                        <simple>${body[Updation_DATE_TIME]}</simple>
+                    </setHeader>
+                    <setHeader name="STAN">
+                        <simple>${body[STAN]}</simple>
+                    </setHeader>
+                    <setHeader name="AEPS_RUPAY_TranDate">
+                        <simple>${body[AEPS_RUPAY_TranDate]}</simple>
+                    </setHeader>
+                    <setHeader name="AEPS_RUPAY_TranTime">
+                        <simple>${body[AEPS_RUPAY_TranTime]}</simple>
+                    </setHeader>
+                    <setHeader name="AcquiringInstitution_Id">
+                        <simple>${body[AcquiringInstitution_Id]}</simple>
+                    </setHeader>
+                    <setHeader name="AEPS_Rupay_RRN">
+                        <simple>${body[AEPS_Rupay_RRN]}</simple>
+                    </setHeader>
+                    <marshal>
+                        <json />
+                    </marshal>
+                    <setBody>
+                        <simple>insert into ESB_Transactions.dbo.TransactionsRequest(Request_Type,PAN ,ACCTNUM ,PCODE,MSGTYPE,TRACE,X_CORRELATION_ID,REFNUM,AMOUNT,NEW_AMOUNT,TERMID,TERMLOC,LOCAL_DATE,LOCAL_TIME,TXNSRC,TXNDEST,ACCEPTORNAME,MERCHANT_TYPE,ACQ_CURRENCY_CODE,CH_AMOUNT,AMOUNT_EQUIV,Support_data,Parent_RRN,Charges,Credit_Debit_Flag,CostCenter,appId,isInclusive,Split_Sequence,Method_Id,Source_Id,Biller_Id,Payment_Channel_Id,Payment_Type,MerchantMobileNo,RemeMobileNo,RemeName,BeneBankName,BeneBranchName,Layer,AEPS_Rupay_RRN,STAN,AEPS_RUPAY_TranDate,AEPS_RUPAY_TranTime,AcquiringInstitution_Id) values ('${header.requestType}','${header.PAN}','${header.ACCTNUM}','${header.PCODE}','${header.MSGTYPE}','${header.TRACE}','${header.X_CORRELATION_ID}','${header.REFNUM}','${header.AMOUNT}','${header.NEW_AMOUNT}','${header.TERMID}','${header.TERMLOC}',getDATE(),SYSDATETIME(),'${header.TXNSRC}','${header.TXNDEST}','${header.ACCEPTORNAME}','${header.MERCHANT_TYPE}','${header.ACQ_CURRENCY_CODE}','${header.AMOUNT}','${header.AMOUNT}','${header.Support_data}','${header.Parent_RRN}','${header.Charges}','${header.Credit_Debit_Flag}','${header.CostCenter}','${header.appId}','${header.isInclusive}','${header.Split_Sequence}','${header.Method_Id}','${header.Source_Id}','${header.Biller_Id}','${header.Payment_Channel_Id}','CMS','${header.MerchantMobileNo}','${header.RemeMobileNo}','${header.RemeName}','${header.BeneBankName}','${header.BeneBranchName}','${header.Layer}','${header.AEPS_Rupay_RRN}','${header.STAN}','${header.AEPS_RUPAY_TranDate}','${header.AEPS_RUPAY_TranTime}','${header.AcquiringInstitution_Id}')</simple>
+                    </setBody>
+                    <log
+                        message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_CMSAdichitragupta Request Sent for Database Insertion Request _${body}" />
+                    <to uri="jdbc:esbDataSource" />
+                </when>
+            </choice>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta Exception occur in db insertion request:::: _${exception}" />
+            </doCatch>
+        </doTry>
+        <choice>
+            <when>
+                <simple>${header.Insert_Type} == '1'</simple>
+                <to uri="direct:insertresponse" />
+            </when>
+        </choice>
+    </route>
+    <route id="RT_CBSRes" streamCache="true">
+        <from uri="direct:insertresponse" />
+        <doTry> <!-- <log message="X-Correlation-Id_${header.X-Correlation-Id} |
+            UseRId_${header.RequestorId} | ESB_CMSAdichitragupta Request Sent for Database Insertion
+            Response _${header.TransactionQueryReq}" /> -->
+            <setBody>
+                <simple>${header.TransactionQueryReq}</simple>
+            </setBody>
+            <removeHeader name="TransactionQueryReq" />
+            <unmarshal>
+                <json />
+            </unmarshal>
+            <setHeader name="requestTypeRes">
+                <simple>${body[Request_Type]}</simple>
+            </setHeader>
+            <setHeader name="REFNUMRes">
+                <simple>${body[REFNUM]}</simple>
+            </setHeader>
+            <setHeader name="MSGTYPERes">
+                <simple>${body[MSGTYPE]}</simple>
+            </setHeader>
+            <setHeader name="RESPCODERes">
+                <simple>${body[RESPCODE]}</simple>
+            </setHeader>
+            <setHeader name="GL_Ledger_BalanceRes">
+                <simple>${body[GL_Ledger_Balance]}</simple>
+            </setHeader>
+            <setHeader name="TERMIDRes">
+                <simple>${body[TERMID]}</simple>
+            </setHeader>
+            <setHeader name="ACCTNUMRes">
+                <simple>${body[ACCTNUM]}</simple>
+            </setHeader>
+            <setHeader name="Ledger_BalanceRes">
+                <simple>${body[Ledger_Balance]}</simple>
+            </setHeader>
+            <setHeader name="AMOUNTRes">
+                <simple>${body[AMOUNT]}</simple>
+            </setHeader>
+            <setHeader name="PCODERes">
+                <simple>${body[PCODE]}</simple>
+            </setHeader>
+            <setHeader name="Response_Msg">
+                <simple>${body[Response_Msg]}</simple>
+            </setHeader>
+            <setHeader name="Client_Id">
+                <simple>${body[Client_Id]}</simple>
+            </setHeader>
+            <setHeader name="Unique_Id">
+                <simple>${body[Unique_Id]}</simple>
+            </setHeader>
+            <setHeader name="TRACE">
+                <simple>${body[TRACE]}</simple>
+            </setHeader>
+            <setHeader name="Payment_Status">
+                <simple>${body[Payment_Status]}</simple>
+            </setHeader>
+            <setHeader name="Bene_AccNo">
+                <simple>${body[Bene_AccNo]}</simple>
+            </setHeader>
+            <setHeader name="BeneIFSC">
+                <simple>${body[BeneIFSC]}</simple>
+            </setHeader>
+            <setHeader name="File_Id">
+                <simple>${body[File_Id]}</simple>
+            </setHeader>
+            <setHeader name="Response_BitMap">
+                <simple>${body[Response_BitMap]}</simple>
+            </setHeader>
+            <setHeader name="BeneName">
+                <simple>${body[BeneName]}</simple>
+            </setHeader>
+            <setHeader name="X_CORRELATION_ID">
+                <simple>${body[X_CORRELATION_ID]}</simple>
+            </setHeader>
+            <setHeader name="IMPSRRN">
+                <simple>${body[IMPSRRN]}</simple>
+            </setHeader>
+            <setHeader name="AuthCode_AEPS_RUPAY">
+                <simple>${body[AuthCode_AEPS_RUPAY]}</simple>
+            </setHeader>
+            <choice>
+                <when>
+                    <simple>${header.RESPCODERes} == 'SUCCESS' || ${header.RESPCODERes} == 'PAID'</simple>
+                    <setHeader name="RESPCODERes">
+                        <simple>0</simple>
+                    </setHeader>
+                </when>
+                <when>
+                    <simple>${header.RESPCODERes} == 'FAILED' || ${header.RESPCODERes} == 'NA'</simple>
+                    <setHeader name="RESPCODERes">
+                        <simple>1</simple>
+                    </setHeader>
+                </when>
+                <when>
+                    <simple>${header.RESPCODERes} == 'PENDING'</simple>
+                    <setHeader name="RESPCODERes">
+                        <simple>2</simple>
+                    </setHeader>
+                </when>
+            </choice>
+            <marshal>
+                <json />
+            </marshal>
+            <setBody>
+                <simple>insert into TransactionsResponse(Request_Type,ACCTNUM,PCODE,MSGTYPE,RESPCODE,Response_Msg,Response_BitMap,TRACE,REFNUM,X_CORRELATION_ID,AMOUNT,LOCAL_DATE,LOCAL_TIME,TERMID,Ledger_Balance,GL_Ledger_Balance,Payment_Status,Bene_AccNo,BeneIFSC,File_Id,BeneName,IMPSRRN,Client_Id,Unique_Id,AuthCode_AEPS_RUPAY) values ('${header.requestTypeRes}','${header.ACCTNUMRes}','${header.PCODERes}','${header.MSGTYPERes}','${header.RESPCODERes}','${header.Response_Msg}','${header.Response_BitMap}','${header.TRACE}','${header.REFNUMRes}','${header.X_CORRELATION_ID}','${header.AMOUNTRes}',getDATE(),SYSDATETIME(),'${header.TERMIDRes}','${header.Ledger_BalanceRes}','${header.GL_Ledger_BalanceRes}','${header.Payment_Status}','${header.Bene_AccNo}','${header.BeneIFSC}','${header.File_Id}','${header.BeneName}','${header.IMPSRRN}','${header.Client_Id}','${header.Unique_Id}','${header.AuthCode_AEPS_RUPAY}')</simple>
+            </setBody>
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_CMSAdichitragupta Response Sent for Database Insertion in Response _${body}" />
+            <to uri="jdbc:esbDataSource" />
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_CMSAdichitragupta Exception occur in db insertion resp:::: _${exception}" />
+            </doCatch>
+        </doTry>
+    </route> <!--Need
+    to change this -->
+    <route id="RT1_ESB_AdiChitraGupta_Reposting" streamCache="true">
+        <from uri="repostingActivemq:queue:DLQ.CMSAdiChitraGuptaReposting?exchangePattern=InOut" />
+        <doTry>
+            <removeHeaders pattern="Camel*"></removeHeaders>
+            <removeHeader name="CamelHttpUri" />
+            <removeHeader name="CamelRestletRequest" />
+            <removeHeader name="CamelRestletResponse" />
+            <removeHeader name="charset" />
+            <removeHeader name="org.restlet.http.headers" />
+            <removeHeader name="org.restlet.startTime" />
+            <setHeader name="Content-Type">
+                <simple>application/json</simple>
+            </setHeader>
+            <setHeader name="CamelHttpMethod">
+                <constant>POST</constant>
+            </setHeader>
+            <setHeader name="MainBody">
+                <simple>${body}</simple>
+            </setHeader>
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE _Reposting Request received from Queue_${body}" />
+            <bean ref="Auth" method="authHeaders" />
+            <setHeader name="Authorization">
+                <simple>${exchangeProperty.Authorization}</simple>
+            </setHeader>
+            <setBody>
+                <simple>{"Method": "${exchangeProperty.Method}","TokenID": "${exchangeProperty.TokenID}"}</simple>
+            </setBody>
+            <setHeader name="clientbodyforReposting">
+                <simple>${body}</simple>
+            </setHeader>
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE_Reposting QUARK_STEP_1 REQUEST SENT To ADICHITRAGUPTASERVICE _Txn_${body}" /> <!--
+            <to uri="log:before?showHeaders=true" /> -->
+            <bean ref="txnrequestProcessor" method="process" />
+            <!-- <to pattern="InOut"
+            uri="cxfrs:bean:rsESB_ADICHITRAGUPTASERVICETransaction?throwExceptionOnFailure=false&amp;headerFilterStrategy=#finoHeaderFilter"
+            /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE_Reposting QUARK_STEP_2 Response RECEVIED From ADICHITRAGUPTASERVICE _Txn_${header.CamelHttpResponseCode}_${body}" />
+            <setHeader name="CamelHttpResponseCode">
+                <simple>${header.CamelHttpResponseCode}</simple>
+            </setHeader>
+            <setProperty name="apistatus">
+                <simple>${header.CamelHttpResponseCode}</simple>
+            </setProperty>
+            <setProperty name="myProperty">
+                <simple>${body}</simple>
+            </setProperty>
+            <setProperty name="clientbody">
+                <jsonpath>$.Response</jsonpath>
+            </setProperty> <!--<unmarshal
+            ref="json2"/>-->
+            <choice>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == '200' </simple>
+                    <doTry>
+                        <setBody>
+                            <simple>{ "MethodId": 202, "RequestData":"${exchangeProperty.clientbody}", "SessionId": "","Identifier": 398}</simple>
+                        </setBody>
+                        <setHeader name="Content-Type">
+                            <simple>application/json</simple>
+                        </setHeader>
+                        <setHeader name="CamelHttpMethod">
+                            <simple>POST</simple>
+                        </setHeader>
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE_Reposting QUARK_STEP_3 ESB_Adichitragupta_ Reposting sending body to BLL for Decryption _${body}" />
+                        <to
+                            uri="{{ESB_CMSAdichitraguptServiceBLL_URL}}?headerFilterStrategy=#fisHeaderFilter&amp;throwExceptionOnFailure=false&amp;soTimeout={{DEFAULT_TIMEOUT}}" />
+                        <log
+                            message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE_Reposting QUARK_STEP_4 ESB_Adichitragupta Reposting Response received from BLL for Decryption _${body}" />
+                        <setProperty name="Decryptedresponse">
+                            <jsonpath>$.ResponseData</jsonpath>
+                        </setProperty>
+                        <setBody>
+                            <simple>${exchangeProperty.Decryptedresponse}</simple>
+                        </setBody>
+                        <log
+                            message="ESB_CMSAdichitragupta Reposting From BLL :: ${exchangeProperty.Decryptedresponse} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <log message="ESB_CMSAdichitragupta Reposting From BLL :: ${header.Status} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <unmarshal>
+                            <json />
+                        </unmarshal>
+                        <bean ref="Auth" method="setHeaderThroghMap" />
+                        <log message="ESB_CMSAdichitragupta Reposting From BLL :: ${body} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <log message="ESB_CMSAdichitragupta Reposting From BLL :: ${header.Status} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <setHeader name="ApiStatusResponse">
+                            <simple>${header.Status}</simple>
+                        </setHeader>
+                        <setHeader name="StatusResponse">
+                            <simple>${header.Status}</simple>
+                        </setHeader> <!--<setHeader
+                        name="ApiStatusResponse"><simple>$.Status</simple></setHeader> <setHeader
+                        name="StatusResponse"><simple>$.Status</simple></setHeader>-->
+                        <log
+                            message="ESB_CMSAdichitragupta Reposting From BLL ApiStatusResponse:: ${header.ApiStatusResponse} "
+                            loggingLevel="INFO" logName="com.fino.asynclog" />
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE_Reposting Error Occured In Response Code_${exception} "></log>
+                            <setHeader name="StatusResponse">
+                                <simple>0</simple>
+                            </setHeader>
+                        </doCatch>
+                    </doTry>
+                    <choice>
+                        <when>
+                            <simple> ${header.StatusResponse} == '1'</simple>
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE_Reposting Response RECEVIED_${body}" />
+                        </when>
+                        <otherwise> <!-- Call this line when status is 0 or other than 1 came from
+                            client -->
+                            <log
+                                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE_Reposting inside otherwise of ADICHITRAGUPTASERVICE reposting _ ${body}" />
+                            <setHeader name="StatusResponse">
+                                <simple>0</simple>
+                            </setHeader>
+                        </otherwise>
+                    </choice>
+                </when>
+                <otherwise>
+                    <log
+                        message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE Response RECEVIED Unexcepted Error_${body}" />
+                    <setHeader name="ApiStatusResponse">
+                        <simple>0</simple>
+                    </setHeader>
+                </otherwise>
+            </choice>
+            <doCatch>
+                <exception>java.lang.Exception </exception>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE_Reposting QUARK_STEP_3 ESB_ADICHITRAGUPTASERVICE _Reposting Exception While Calling ADICHITRAGUPTASERVICE API_${body}_${exception.stacktrace}" />
+                <setHeader name="StatusResponse">
+                    <simple>0</simple>
+                </setHeader>
+            </doCatch>
+            <doFinally>
+                <setBody>
+                    <simple>${header.MainBody}</simple>
+                </setBody>
+                <bean ref="txnrequestProcessor" method="counter" />
+                <choice>
+                    <when>
+                        <simple>${header.RCounter} &lt; '3'</simple>
+                        <to uri="direct:CMSAdiChitraGuptaStatusPoint" />
+                        <choice>
+                            <when>
+                                <simple>${header.StatusResponse} == '1' || ${header.ApiStatusResponse} == '1'</simple>
+                                <log
+                                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE_Reposting QUARK_STEP_5 ESB_ADICHITRAGUPTASERVICE_Reposting Response RECEVIED_${body}" />
+                                <setHeader name="TransactionQueryReq">
+                                    <simple>{"Insert_Type": "1","Request_Type": "1","ACCTNUM": "","PCODE": "CMSAdiChitraGuptaReposting","MSGTYPE": "0","RESPCODE": "0","Response_Msg": "Success","TRACE": "${header.trans_ref_no}","REFNUM": "","AMOUNT": "${header.amt}","TERMID": "${header.RequestorId}","Ledger_Balance": "","GL_Ledger_Balance": "","Payment_Status": "Success","Bene_AccNo": "null","BeneIFSC": "null","File_Id": "0","BeneName": "null","Client_Id": "","Unique_Id": "","X_CORRELATION_ID":"${header.X-Correlation-Id}"}</simple>
+                                </setHeader>
+                                <to uri="seda:DBResponseInsert?waitForTaskToComplete=Never" />
+                                <log
+                                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE_Reposting QUARK_STEP_6 ESB_ADICHITRAGUPTASERVICE_Reposting sending data for db entry ${header.TransactionQueryReq} " />
+                            </when>
+                            <otherwise>
+                                <choice>
+                                    <when>
+                                        <simple>${header.RCounter} &lt; '3'</simple>
+                                        <log
+                                            message="ESB_ADICHITRAGUPTASERVICE _Reposting_Exception inside error recounte_inside recounter_${header.RCounter}" />
+                                        <setBody>
+                                            <simple>${header.MainBody}</simple>
+                                        </setBody>
+                                        <to pattern="InOnly"
+                                            uri="repostingActivemq:queue:CMSAdiChitraGuptaReposting?timeToLive={{ESB_ADICHITRAGUPTASERVICE_TimeToLive}}" />
+                                    </when>
+                                </choice>
+                            </otherwise>
+                        </choice>
+                    </when>
+                </choice>
+            </doFinally>
+        </doTry>
+    </route>
+    <route id="RT13_ESB_ADICHITRAGUPTASERVICE_Status" streamCache="true">
+        <from uri="direct:CMSAdiChitraGuptaStatusPoint" />
+        <removeHeader name="CamelHttpMethod" />
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="charset" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+        <removeHeader name="Content-Type" />
+        <removeHeaders pattern="Camel*" />
+        <doTry>
+            <setHeader name="CamelHttpMethod">
+                <constant>POST</constant>
+            </setHeader>
+            <setHeader name="Content-Type">
+                <simple>application/json</simple>
+            </setHeader>
+            <setHeader name="StatusMethod">
+                <simple>{{ESB_CMSAdichitraguptaStatusMethod}}</simple>
+            </setHeader>
+            <setHeader name="PreSharedKey">
+                <simple>{{ESB_CMSadichitraguptaPreSharedKey}}</simple>
+            </setHeader>
+            <setHeader name="version">
+                <simple>{{ESB_CMSAdichitraguptaversion}}</simple>
+            </setHeader>
+            <setHeader name="Authorization_Header">
+                <simple>{{ESB_CMSAdichitragupta_ClientName}}</simple>
+            </setHeader>
+            <setHeader name="Client_url">
+                <simple>{{ESB_CMS_Adichitragupta_URL}}</simple>
+            </setHeader>
+            <setBody>
+                <simple>{"Method": "${header.StatusMethod}","RefID": "${header.trans_ref_no}"}</simple>
+            </setBody>
+            <bean ref="Auth" method="authHeaders" />
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_19 RT13_ESB_ADICHITRAGUPTASERVICE_Status REQUEST sent to Adichitragupta_:${body}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <bean ref="txnrequestProcessor" method="process" />
+            <!-- <to pattern="InOut"
+            uri="cxfrs:bean:rsESB_ADICHITRAGUPTASERVICETransaction?throwExceptionOnFailure=false&amp;headerFilterStrategy=#finoHeaderFilter"
+            /> -->
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_20 RT13_ESB_ADICHITRAGUPTASERVICE_Status RESPONSE RECEIVED FROM Adichitragupta_:${body} "
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <setProperty name="apistatus">
+                <simple>${header.CamelHttpResponseCode}</simple>
+            </setProperty>
+            <setProperty name="myProperty">
+                <simple>${body}</simple>
+            </setProperty>
+            <setProperty name="clientbody">
+                <jsonpath>$.Response</jsonpath>
+            </setProperty>
+            <log
+                message="RT13_ESB_ADICHITRAGUPTASERVICE_Status apistatus :: ${exchangeProperty.apistatus}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <log
+                message="RT13_ESB_ADICHITRAGUPTASERVICE_Status myProperty :: ${exchangeProperty.myProperty}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <log
+                message="RT13_ESB_ADICHITRAGUPTASERVICE_Status clientbody :: ${exchangeProperty.clientbody}"
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <setBody>
+                <simple>{ "MethodId": 202, "RequestData":"${exchangeProperty.clientbody}", "SessionId": "","Identifier": 398}</simple>
+            </setBody>
+            <setHeader name="Content-Type">
+                <simple>application/json</simple>
+            </setHeader>
+            <setHeader name="CamelHttpMethod">
+                <simple>POST</simple>
+            </setHeader>
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_21 RT13_ESB_ADICHITRAGUPTASERVICE_Status getcollectionstatus sending body to BLL for Decryption _${body}" />
+            <to
+                uri="{{ESB_CMSAdichitraguptServiceBLL_URL}}?headerFilterStrategy=#fisHeaderFilter&amp;throwExceptionOnFailure=false&amp;soTimeout={{DEFAULT_TIMEOUT}}" />
+            <log
+                message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_ADICHITRAGUPTASERVICE QUARK_STEP_22 RT13_ESB_ADICHITRAGUPTASERVICE_Status getcollectionstatus Response received from BLL for Decryption _${body}" />
+            <setProperty name="Decryptedresponse">
+                <jsonpath>$.ResponseData</jsonpath>
+            </setProperty>
+            <setBody>
+                <simple>${exchangeProperty.Decryptedresponse}</simple>
+            </setBody>
+            <log
+                message="RT13_ESB_ADICHITRAGUPTASERVICE_Status Decryptedresponse From BLL :: ${exchangeProperty.Decryptedresponse} "
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <log
+                message="RT13_ESB_ADICHITRAGUPTASERVICE_Status Status From BLL :: ${header.Status} "
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <unmarshal>
+                <json />
+            </unmarshal>
+            <bean ref="Auth" method="setHeaderThroghStatusApi" />
+            <log message="RT13_ESB_ADICHITRAGUPTASERVICE_Status Body From BLL :: ${body} "
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <log
+                message="RT13_ESB_ADICHITRAGUPTASERVICE_Status Status From BLL :: ${header.Status} "
+                loggingLevel="INFO" logName="com.fino.asynclog" />
+            <choice>
+                <when>
+                    <simple>${header.ApiStatusHttpResponseCode} == '200'</simple> <!-- Status-->
+                    <doTry>
+                        <setHeader name="ApiStatusResponse">
+                            <simple>${body[0][Status]}</simple>
+                        </setHeader>
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <setHeader name="ApiStatusResponse">
+                                <simple>0</simple>
+                            </setHeader>
+                        </doCatch>
+                    </doTry>
+                    <choice>
+                        <when>
+                            <simple>${header.ApiStatusResponse} == '1'</simple>
+                            <setHeader name="Status_clientrespmessage">
+                                <simple>${body[0][ResponseMsg]}</simple><!--ResponseMsg -->
+                            </setHeader>
+                        </when>
+                        <otherwise>
+                            <setHeader name="Status_clientrespmessage">
+                                <simple>${body[0][ResponseMsg]}</simple>
+                            </setHeader>
+                        </otherwise>
+                    </choice>
+                </when>
+                <otherwise>
+                    <setHeader name="ApiStatusResponse">
+                        <simple>${header.ApiStatusHttpResponseCode}</simple>
+                    </setHeader>
+                </otherwise>
+            </choice>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <setHeader name="ApiStatusResponse">
+                    <simple>${exception}</simple>
+                </setHeader>
+                <log
+                    message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} | ESB_CMSADICHITRAGUPTASERVICE Status Exception while ADICHITRAGUPTASERVICE Status API Call_${header.ApiStatusResponse}_${exception.message} " />
+            </doCatch>
+            <doFinally>
+                <setHeader name="Content-Type">
+                    <simple>application/json</simple>
+                </setHeader>
+                <removeHeader name="ApiStatusHttpResponseCode" />
+            </doFinally>
+        </doTry>
+    </route> <!--
+    DB Insertion Route -->
+    <route id="RT3_ESB_AdiChitraGupta_Reposting_ResponseInsert">
+        <from uri="seda:DBResponseInsert?concurrentConsumers={{maxConcurrentConsumers}}" />
+        <doTry>
+            <log message="ESB_ADICHITRAGUPTASERVICE _Reposting request que insert: ${body}" />
+            <to pattern="InOnly" uri="activemq:queue:TransactionQueue" />
+            <removeHeader name="TransactionQueryReq" />
+            <removeHeader name="responseMsg" />
+            <removeHeader name="cbsTxnReferenceNo" />
+            <removeHeader name="GlAvailableBalance" />
+            <removeHeader name="paymentReqResponseCode" />
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log
+                    message="ESB_ADICHITRAGUPTASERVICE _Reposting Exception Occured while que insert: ${exception.stacktrace}" />
+                <removeHeader name="TransactionQueryReq" />
+            </doCatch>
+        </doTry>
+    </route>
+</routes>

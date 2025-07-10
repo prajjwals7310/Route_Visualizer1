@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Camel Route Visualizer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(120deg, #1d3557, #457b9d);
+      color: #f1faee;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .form-container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+      text-align: center;
+      width: 500px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #f1faee;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      outline: none;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    button {
+      background-color: #e63946;
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #d62839;
+    }
+
+    ::placeholder {
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Enter GitHub Repository URL</h2>
+    <form action="/render" method="post">
+      <input type="text" name="git_url" placeholder="https://github.com/user/repo.git" required />
+      <button type="submit">Run</button>
+    </form>
+  </div>
+</body>
+</html>

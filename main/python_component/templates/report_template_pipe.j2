@@ -1,0 +1,11 @@
+Direction: {{ direction }}
+Component: {{ component }}
+
+| Attribute                     | Default             | Specification                   |
+|------------------------------|---------------------|----------------------------------|
+{% for attr in with_spec -%}
+| {{ '%-28s' % attr.name }} | {{ '%-19s' % attr.default }} | {{ '%-30s' % attr.spec }} |
+{% endfor %}
+{% for attr in without_spec -%}
+| {{ '%-28s' % attr.name }} | {{ '%-19s' % attr.default }} |                                |
+{% endfor %}

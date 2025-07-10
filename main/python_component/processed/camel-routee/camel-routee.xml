@@ -1,0 +1,1403 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes xmlns="http://camel.apache.org/schema/spring"
+    xmlns:xs="http://tempuri.org/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd" id="Ctx__PassbookAssistedMode">
+    <route id="RT1_ESB_PassbookAssistedMode" streamCache="true">
+        <from uri="direct:assistedmode" />
+        <bean ref="requestProcessor" method="logging" />
+        <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_1 REQUEST RECIEVED FROM USER_${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <setHeader name="DBFlag">
+            <simple>{{DBFlagForInsert}}</simple>
+        </setHeader>
+        <setHeader name="bitmap">
+            <jsonpath>$.requestBitmap</jsonpath>
+        </setHeader>
+        <setHeader name="accountHistory">
+            <jsonpath>$.accountHistory</jsonpath>
+        </setHeader>
+        <setHeader name="DMSDetails">
+            <jsonpath>$.DMSDetails</jsonpath>
+        </setHeader>
+        <setHeader name="DMSDetailsPhoto">
+            <jsonpath>$.DMSDetailsPhoto</jsonpath>
+        </setHeader>
+        <setHeader name="TxnPostingReq">
+            <jsonpath>$.TransactionDetails</jsonpath>
+        </setHeader>
+        <bean ref="concat" method="readBitmap"></bean>
+        <choice>
+            <when>
+                <simple>${header.CustomerAuthBit} == '1'</simple>
+                <setHeader name="auth_id">
+                    <jsonpath>$.CustomerAuthentication.Auth_id</jsonpath>
+                </setHeader>
+                <choice>
+                    <when>
+                        <simple>${header.auth_id} == '1'</simple>
+                        <setHeader name="OTPBody">
+                            <jsonpath>$.CustomerAuthentication.Otp</jsonpath>
+                        </setHeader>
+                        <to uri="direct:OTPAuthentication" />
+                        <removeHeader name="OTPBody" />
+                    </when>                    <!-- Aadhar
+                    Authentication -->
+                    <when>
+                        <simple>${header.auth_id} == '2'</simple>
+                        <setHeader name="AadharBody">
+                            <jsonpath>$.CustomerAuthentication.Aadhaar.data</jsonpath>
+                        </setHeader>
+                        <to uri="direct:AadharAuthentication" />
+                        <removeHeader name="AadharBody" />
+                    </when>                    <!-- FP
+                    Authentication -->
+                    <when>
+                        <simple>${header.auth_id} == '3'</simple>
+                        <setHeader name="FPBody">
+                            <jsonpath>$.CustomerAuthentication.Fp_Auth</jsonpath>
+                        </setHeader>
+                        <to uri="direct:FPAuthentication" />
+                        <removeHeader name="FPBody" />
+                    </when>                    <!-- OTP + Aadhar
+                    Authentication -->
+                    <when>
+                        <simple>${header.auth_id} == '4'</simple>
+                        <setHeader name="AadharBody">
+                            <jsonpath>$.CustomerAuthentication.Aadhaar.data</jsonpath>
+                        </setHeader>
+                        <setHeader name="OTPBody">
+                            <jsonpath>$.CustomerAuthentication.Otp</jsonpath>
+                        </setHeader>
+                        <to uri="direct:OTPAuthentication" />
+                        <choice>
+                            <when>
+                                <simple>${header.otpRespCode} == '000'</simple>
+                                <to uri="direct:AadharAuthentication" />
+                                <choice>
+                                    <when>
+                                        <simple>${header.authResCode1}== 'y'</simple>
+                                        <setHeader name="authRespCode">
+                                            <simple>0</simple>
+                                        </setHeader>
+                                        <setHeader name="Authbit">
+                                            <simple>0</simple>
+                                        </setHeader>
+                                        <setHeader name="authResponse">
+                                            <simple>{"returnCode":"0","responseMessage":"OTP+AADHAR Verification Successful"}</simple>
+                                        </setHeader>
+                                    </when>
+                                    <otherwise>
+                                        <setHeader name="authRespCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="Authbit">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="AccountHistorybit1">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="cbsreturnCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="AccountHistorybit1">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="PostTxnBit">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="DMSdatabit1">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="DMSDetailsBit">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="TxnRespCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="DMSreturnCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="authResponse">
+                                            <simple>{"returnCode":"1","responseMessage":"AADAHR Verification Fail"}</simple>
+                                        </setHeader>
+                                    </otherwise>
+                                </choice>
+                            </when>
+                            <otherwise>
+                                <setHeader name="authRespCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="Authbit">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="AccountHistorybit1">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="cbsreturnCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="AccountHistorybit1">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="PostTxnBit">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="DMSdatabit1">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="DMSDetailsBit">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="TxnRespCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="DMSreturnCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="authResponse">
+                                    <simple>{"returnCode":"1","responseMessage":"OTP Verification Fail"}</simple>
+                                </setHeader>
+                            </otherwise>
+                        </choice>
+                        <removeHeader name="AadharBody" />
+                        <removeHeader name="OTPBody" />
+                    </when>                    <!-- OTP+FP
+                    Verification -->
+                    <when>
+                        <simple>${header.auth_id} == '5'</simple>                        <!-- Set FP Header to Use -->
+                        <setHeader name="FPBody">
+                            <jsonpath>$.CustomerAuthentication.Fp_Auth</jsonpath>
+                        </setHeader>                        <!-- Set OTP
+                        Body using header -->
+                        <setHeader name="OTPBody">
+                            <jsonpath>$.CustomerAuthentication.Otp</jsonpath>
+                        </setHeader>
+                        <to uri="direct:OTPAuthentication" />
+                        <choice>
+                            <when>
+                                <simple>${header.otpRespCode} == '000'</simple>
+                                <to uri="direct:FPAuthentication" />
+                                <choice>
+                                    <when>
+                                        <simple> ${header.Ftp_code} == '00' </simple>
+                                        <setHeader name="authRespCode">
+                                            <simple>0</simple>
+                                        </setHeader>
+                                        <setHeader name="Authbit">
+                                            <simple>0</simple>
+                                        </setHeader>
+                                        <setHeader name="authResponse">
+                                            <simple>{"returnCode":"0","responseMessage":"OTP+FP Verification Successful"}</simple>
+                                        </setHeader>
+                                    </when>
+                                    <otherwise>
+                                        <setHeader name="authRespCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="Authbit">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="AccountHistorybit1">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="cbsreturnCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="AccountHistorybit1">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="PostTxnBit">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="DMSdatabit1">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="DMSDetailsBit">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="TxnRespCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="DMSreturnCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="authResponse">
+                                            <simple>{"returnCode":"1","responseMessage":"FP Verification Fail"}</simple>
+                                        </setHeader>
+                                    </otherwise>
+                                </choice>
+                            </when>
+                            <otherwise>
+                                <setHeader name="authRespCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="Authbit">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="AccountHistorybit1">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="cbsreturnCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="AccountHistorybit1">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="PostTxnBit">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="DMSdatabit1">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="DMSDetailsBit">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="TxnRespCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="DMSreturnCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="authResponse">
+                                    <simple>{"returnCode":"1","responseMessage":"OTP Verification Fail"}</simple>
+                                </setHeader>
+                            </otherwise>
+                        </choice>
+                        <removeHeader name="FPBody" />
+                        <removeHeader name="OTPBody" />
+                    </when>                    <!-- AADHAR + FP
+                    Authentication -->
+                    <when>
+                        <simple>${header.auth_id} == '6'</simple>                        <!-- Set FP Header to Use In Dual Policy -->
+                        <setHeader name="FPBody">
+                            <jsonpath>$.CustomerAuthentication.Fp_Auth</jsonpath>
+                        </setHeader>                        <!-- Set AADHAR
+                        Body using header -->
+                        <setHeader name="AadharBody">
+                            <jsonpath>$.CustomerAuthentication.Aadhaar.data</jsonpath>
+                        </setHeader>
+                        <to uri="direct:AadharAuthentication" />
+                        <choice>
+                            <when>
+                                <simple>${header.authResCode1}== 'y'</simple>
+                                <to uri="direct:FPAuthentication" />
+                                <choice>
+                                    <when>
+                                        <simple> ${header.Ftp_code} == '00' </simple>
+                                        <setHeader name="authRespCode">
+                                            <simple>0</simple>
+                                        </setHeader>
+                                        <setHeader name="Authbit">
+                                            <simple>0</simple>
+                                        </setHeader>
+                                        <setHeader name="authResponse">
+                                            <simple>{"returnCode":"0","responseMessage":"AADHAR+FP Verification Successful"}</simple>
+                                        </setHeader>
+                                    </when>
+                                    <otherwise>
+                                        <setHeader name="authRespCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="Authbit">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="AccountHistorybit1">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="cbsreturnCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="AccountHistorybit1">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="PostTxnBit">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="DMSdatabit1">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="DMSDetailsBit">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="TxnRespCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="DMSreturnCode">
+                                            <simple>1</simple>
+                                        </setHeader>
+                                        <setHeader name="authResponse">
+                                            <simple>{"returnCode":"1","responseMessage":"FP Verification Fail"}</simple>
+                                        </setHeader>
+                                    </otherwise>
+                                </choice>
+                            </when>
+                            <otherwise>
+                                <setHeader name="authRespCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="Authbit">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="AccountHistorybit1">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="cbsreturnCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="AccountHistorybit1">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="PostTxnBit">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="DMSdatabit1">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="DMSDetailsBit">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="TxnRespCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="DMSreturnCode">
+                                    <simple>1</simple>
+                                </setHeader>
+                                <setHeader name="authResponse">
+                                    <simple>{"returnCode":"1","responseMessage":"AADAHR Verification Fail"}</simple>
+                                </setHeader>
+                            </otherwise>
+                        </choice>
+                        <removeHeader name="FPBody" />
+                        <removeHeader name="AadharBody" />
+                    </when>
+                    <otherwise>
+                        <setHeader name="authRespCode">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="Authbit">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="AccountHistorybit1">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="cbsreturnCode">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="AccountHistorybit1">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="PostTxnBit">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="DMSdatabit1">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="DMSDetailsBit">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="TxnRespCode">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="DMSreturnCode">
+                            <simple>1</simple>
+                        </setHeader>
+                        <setHeader name="authResponse">
+                            <simple>{"returnCode":"1","responseMessage":"No Authentication Specified"}</simple>
+                        </setHeader>
+                    </otherwise>
+                </choice>
+            </when>
+            <otherwise>
+                <setHeader name="authRespCode">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"0","responseMessage":"No Authentication"}</simple>
+                </setHeader>
+            </otherwise>
+        </choice>
+        <choice>
+            <when>
+                <simple>${header.authRespCode} == '0' &amp;&amp;  ${header.AccountHistorybit} == '1'</simple>
+                <log message="AccountHistorybit1.....${header.AccountHistorybit1} and cbsreturnCode.......${header.cbsreturnCode} and authResponse.......${header.authResponse} and DMSdatabit.......${header.DMSdatabit}" />
+                <to uri="log:before?showHeaders=true" />
+                <to uri="direct:accountHistorycall" />
+                <log message="AccountHistorybit1.....${header.AccountHistorybit1} and cbsreturnCode.......${header.cbsreturnCode} and authResponse.......${header.authResponse} and DMSdatabit.......${header.DMSdatabit}" />
+                <to uri="log:before?showHeaders=true" />
+            </when>            <!-- <otherwise>
+            <setHeader name="DMSreturnCode"> <simple>0</simple> </setHeader> <setHeader name="AccountHistorybit1"> <simple>0</simple> </setHeader> <setHeader name="cbsreturnCode"> <simple>0</simple> </setHeader> </otherwise> -->
+        </choice>
+        <choice>
+            <when>
+                <simple>${header.authRespCode} == '0' &amp;&amp;  ${header.DMSdatabit} == '1' &amp;&amp;  ${header.cbsreturnCode} == '0'</simple>                <!-- <setHeader name="DMSreturnCode"> <simple>0</simple>
+                </setHeader> -->
+                <log message="Inside DMSDatabit" />
+                <to uri="log:before?showHeaders=true" />
+                <to uri="direct:PassbookAssistedModeDMS" />
+                <setHeader name="Content-Type">
+                    <simple>application/json</simple>
+                </setHeader>
+            </when>            <!-- <otherwise>
+            <setHeader name="DMSreturnCode"> <simple>0</simple> </setHeader> <setHeader name="DMSdatabit1"> <simple>0</simple> </setHeader> <setHeader name="cbsreturnCode">
+            <simple>0</simple> </setHeader> </otherwise> -->
+        </choice>
+        <choice>
+            <when>                <!-- <simple>${header.authRespCode} == '0' &amp;&amp;  ${header.PostTxnbit} == '1' and
+                ${header.DMSreturnCode} == '0'</simple> <to uri="direct:TxnPosting" /> -->
+                <simple>${header.authRespCode} == '0' &amp;&amp;  ${header.DMSreturnCode} == '0' &amp;&amp;  ${header.DMSDetailsBit} == '1' &amp;&amp;  ${header.cbsreturnCode} == '0'</simple>
+                <to uri="direct:DMSCall" />
+                <setHeader name="DMSDetailsBit">
+                    <simple>0</simple>
+                </setHeader>
+            </when>            <!-- <otherwise>
+            <setHeader name="TxnRespCode"> <simple>0</simple> </setHeader> <setHeader name="PostTxnBit"> <simple>0</simple> </setHeader> <setHeader name="TrasactionResponse">
+            <simple>null</simple> </setHeader> </otherwise> -->
+        </choice>
+        <log message="${header.authRespCode}_${header.TxnRespCode}_${header.DMSreturnCode}_${header.DMSDetailsBit}"></log>
+        <choice>
+            <when>
+                <simple>${header.authRespCode} == '0' &amp;&amp;  ${header.DMSreturnCode} == '0' &amp;&amp;  ${header.PostTxnBit} == '1' &amp;&amp;  ${header.cbsreturnCode} == '0' &amp;&amp;  ${header.DMSRespCode} == '0'</simple>
+                <to uri="direct:TxnPosting" />
+            </when>
+        </choice>
+        <bean ref="concat" method="combine"></bean>
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} |ESB_PassbookAssistedMode QUARK_STEP_17 RESPONSE BODY SENT TO USER_${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+        <removeHeaders pattern="*" excludePattern="Breadcrumbid|Content-Type|Server|CamelHttpResponseCode|DMSDetails"></removeHeaders>
+    </route>
+    <route id="RT3_Bajajpaymentupdate_OTPRoute" streamCache="true">
+        <from uri="direct:OTPAuthentication" />
+        <setBody>
+            <simple>${header.OTPBody}</simple>
+        </setBody>
+        <marshal>
+            <json />
+        </marshal>
+        <setHeader name="RequestData">
+            <jsonpath>$.RequestData</jsonpath>
+        </setHeader>
+        <log message=" header :: ${header.RequestData}" loggingLevel="INFO" logName="com.fino.asynclog" />
+        <setBody>
+            <simple>${header.RequestData}</simple>
+        </setBody>
+        <log message="OTP Body ${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+        <setHeader name="idReq">
+            <jsonpath>$.RequestId</jsonpath>
+        </setHeader>
+        <setHeader name="numberMob">
+            <jsonpath>$.CustomerMobileNo</jsonpath>
+        </setHeader>
+        <setHeader name="pinOtp">
+            <jsonpath>$.OtpPin</jsonpath>
+        </setHeader>
+        <doTry>
+            <setHeader name="authID_Code">
+                <jsonpath>$.RequestId</jsonpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="txn_${header.authID_Code}"></log>
+                <setHeader name="authID_Code">
+                    <simple>${date:now:yyyy-MM-dd}</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <setBody>
+            <simple>{"MethodId": "2","TellerID": "11","CustomerMobileNo": "${header.numberMob}","EventId": "","VerifyParam": {"RequestId": "${header.idReq}","OtpPin": "${header.pinOtp}"}}</simple>
+        </setBody>
+        <removeHeader name="CamelHttpMethod" />
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="charset" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <setHeader name="CamelHtppMethd">
+            <simple>POST</simple>
+        </setHeader>
+        <log message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_PassbookAssistedMode QUARK_STEP_2 REQUEST SENT FOR OTP VERIFICATION_1${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+        <to uri="{{ESB_SMSService_FINO_URL_{{currentSetUp}}}}" />
+        <log message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_PassbookAssistedMode QUARK_STEP_3 RESPONSE RECEIVE FROM OTP VERIFICATION_1${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+        <doTry>
+            <setHeader name="otpRespCode">
+                <jsonpath>$.ResponseCode</jsonpath>
+            </setHeader>
+            <log message="OTP verification resp code......." loggingLevel="INFO" logName="com.fino.asynclog" />
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_PassbookAssistedMode QUARK_STEP_3 Exception occured11: #${exception}" />
+                <setHeader name="otpRespCode">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <choice>
+            <when>
+                <simple>${header.otpRespCode} == '000'</simple>
+                <log message="Inside OTP veri success......." loggingLevel="INFO" logName="com.fino.asynclog" />
+                <setHeader name="authRespCode">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"0","responseMessage":"OTP Verification Successful"}</simple>
+                </setHeader>
+            </when>
+            <otherwise>
+                <log message="Inside OTP veri failed......." loggingLevel="INFO" logName="com.fino.asynclog" />
+                <setHeader name="authRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="AccountHistorybit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="cbsreturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="AccountHistorybit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PostTxnBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSdatabit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSDetailsBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="TxnRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSreturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"1","responseMessage":"OTP Verification Fail"}</simple>
+                </setHeader>
+            </otherwise>
+        </choice>
+    </route>    <!--
+    Aadhar Authentication Route -->
+    <route id="RT4_Bajajpaymentupdate__AadharRoute" streamCache="true">
+        <from uri="direct:AadharAuthentication" />
+        <setBody>
+            <simple>${header.AadharBody}</simple>
+        </setBody>
+        <removeHeader name="CamelHttpMethod" />
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="Connect*" />
+        <removeHeader name="charset" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+         <setHeader name="CamelHttpMethod">
+            <simple>POST</simple>
+         </setHeader>
+          <setHeader name="Content-Type">
+            <simple>application/json</simple>
+         </setHeader>
+        <log message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_PassbookAssistedMode QUARK_STEP_2 REQUEST SENT FOR AADHAAR VERIFICATION_${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+        <!-- <to uri="cxf:bean:KUA_Auth_Service?dataFormat=MESSAGE&amp;headerFilterStrategy=#fisHeaderFilter" /> -->
+        <to uri="{{FINO_AADHARURL_{{currentSetUp}}}}?dataFormat=MESSAGE&amp;headerFilterStrategy=#fisHeaderFilter" />
+
+        <log message=" X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_PassbookAssistedMode QUARK_STEP_3 RESPONSE RECEIVED FOR AADHAAR VERIFICATION_${body} " loggingLevel="INFO" logName="com.fino.asynclog" />
+        <setBody>
+            <xpath>/*/*/xs:Auth_XML_CreationLevel_AUAResponse/xs:Auth_XML_CreationLevel_AUAResult/text()</xpath>
+        </setBody>
+        <convertBodyTo type="java.lang.String" />
+        <to uri="log:before?showHeaders=true" />
+        <!-- Check for Aadhar Validation -->
+        <doTry>
+            <setHeader name="authResCode1">
+                <xpath>AuthRes/@ret</xpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_PassbookAssistedMode QUARK_STEP_3 Exception occured: #${exception}" />
+                <setHeader name="authResCode1">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <log message="Aadhar Verification Value:-${header.authResCode1}_${header.MapperID}" />
+        <choice>
+            <when>
+                <simple>${header.authResCode1}== 'y'</simple>
+                <setHeader name="authRespCode">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"0","responseMessage":"Aadhaar Authentication Successful"}</simple>
+                </setHeader>
+                <doTry>
+                    <setHeader name="authID_Code">
+                        <xpath>AuthRes/@txn</xpath>
+                    </setHeader>
+                    <doCatch>
+                        <exception>java.lang.Exception</exception>
+                        <log message="txn_${header.authID_Code}"></log>
+                        <setHeader name="authID_Code">
+                            <simple>${date:now:yyyy-MM-dd}</simple>
+                        </setHeader>
+                    </doCatch>
+                </doTry>
+            </when>
+            <otherwise>
+                <setHeader name="authRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="AccountHistorybit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="cbsreturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="AccountHistorybit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PostTxnBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSdatabit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSDetailsBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="TxnRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSreturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"2","responseMessage":"Aadhaar Authentication Failed"}</simple>
+                </setHeader>
+                <setBody>
+                    <simple>{"returnCode":"2","responseMessage":"Aadhaar Authentication Failed"}</simple>
+                </setBody>
+            </otherwise>
+        </choice>
+    </route>    <!--
+    FP Authentication Route -->
+    <route id="RT4_Bajajpaymentupdatee__FPRoute" streamCache="true">
+        <from uri="direct:FPAuthentication" />
+        <setBody>
+            <simple>${header.FPBody}</simple>
+        </setBody>
+        <marshal>
+            <json />
+        </marshal>
+        <removeHeader name="CamelHttpUri" />
+        <removeHeader name="CamelRestletRequest" />
+        <removeHeader name="CamelRestletResponse" />
+        <removeHeader name="charset" />
+        <removeHeader name="Content-Type" />
+        <removeHeader name="org.restlet.http.headers" />
+        <removeHeader name="org.restlet.startTime" />
+        <setHeader name="Content-Type">
+            <simple>application/json</simple>
+        </setHeader>
+        <setHeader name="CamelHttpMethod">
+            <simple>POST</simple>
+        </setHeader>
+
+        <log message=" X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_PassbookAssistedMode QUARK_STEP_2 REQUEST SENT FOR FP AUTHENTICATION_${body} " loggingLevel="INFO" logName="com.fino.asynclog" />
+        <to uri="{{FINO_FPURL_{{currentSetUp}}}}&amp;headerFilterStrategy=#fisHeaderFilter" />
+        <log message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_PassbookAssistedMode QUARK_STEP_3 RESPONSE RECEIVED FOR FP AUTHENTICATION_${body} " loggingLevel="INFO" logName="com.fino.asynclog" />
+        <doTry>
+            <setHeader name="Ftp_code">
+                <jsonpath>$.ResponseCode</jsonpath>
+            </setHeader>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId}| ESB_PassbookAssistedMode QUARK_STEP_3 Exception occured: #${exception}" />
+                <setHeader name="Ftp_code">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <choice>
+            <when>
+                <simple>${header.Ftp_code} == '00' </simple>
+                <setHeader name="authRespCode">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>0</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"0","responseMessage":"FP Authentication Successful"}</simple>
+                </setHeader>
+                <doTry>
+                    <setHeader name="authID_Code">
+                        <jsonpath>$.ResponseData</jsonpath>
+                    </setHeader>
+                    <doCatch>
+                        <exception>java.lang.Exception</exception>
+                        <log message="txn_${header.authID_Code}"></log>
+                        <setHeader name="authID_Code">
+                            <simple>${date:now:yyyy-MM-dd}</simple>
+                        </setHeader>
+                    </doCatch>
+                </doTry>
+            </when>
+            <otherwise>
+                <setHeader name="authRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="Authbit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="AccountHistorybit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="cbsreturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="AccountHistorybit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PostTxnBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSdatabit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSDetailsBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="TxnRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSreturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="authResponse">
+                    <simple>{"returnCode":"3","responseMessage":"FP Verification Failed"}</simple>
+                </setHeader>
+            </otherwise>
+        </choice>
+    </route>
+    <route streamCache="true" id="RT_PassbookAssistedModeDMS">
+        <from uri="direct:PassbookAssistedModeDMS" />
+        <setBody>
+            <simple>${header.DMSDetailsPhoto}</simple>
+        </setBody>
+        <marshal>
+            <json />
+        </marshal>
+        <removeHeaders pattern="Camel*"></removeHeaders>
+        <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_4 Request Send to DMS_${body}"></log>
+        <doTry>
+            <setHeader name="CamelHttpMethod">
+                <simple>POST</simple>
+            </setHeader>
+            <to uri="{{ESB_PassbookAssistedMode_Posting_URL_{{currentSetUp}}}}?headerFilterStrategy=#fisHeaderFilter&amp;throwExceptionOnFailure=false&amp;socketTimeout={{DEFAULT_TIMEOUT}}&amp;connectTimeout={{DEFAULT_TIMEOUT}}" />
+            <convertBodyTo type="java.lang.String"></convertBodyTo>          
+            
+            <choice>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == '200'</simple>
+                    <setHeader name="DMSreturnCode">
+                        <jsonpath>$.returnCode</jsonpath>
+                    </setHeader>
+                    <setHeader name="DMSresponseBody">
+                        <simple>${body}</simple>
+                    </setHeader>
+                    <setHeader name="Content-Type">
+                        <simple>application/json</simple>
+                    </setHeader>
+                    <choice>
+                        <when>
+                            <simple>${header.DMSreturnCode} == '0'</simple>
+                            <setHeader name="DMSreturnCode">
+                                <simple>0</simple>
+                            </setHeader>
+                            <setHeader name="DMSdatabit1">
+                                <simple>0</simple>
+                            </setHeader>
+                        </when>
+                        <otherwise>
+                            <setHeader name="PostTxnBit">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="DMSdatabit1">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="DMSDetailsBit">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="TxnRespCode">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="DMSreturnCode">
+                                <simple>'1'</simple>
+                            </setHeader>
+                        </otherwise>
+                    </choice>
+                    <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} |ESB_PassbookAssistedMode QUARK_STEP_5 RESPONSE From DMS_${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+                </when>
+                <otherwise>
+                    <setHeader name="Content-Type">
+                        <simple>application/json</simple>
+                    </setHeader>
+                    <setHeader name="DMSresponseBody">
+                        <simple>${body}</simple>
+                    </setHeader>
+                    <setHeader name="DMSdatabit">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="PostTxnBit">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="DMSdatabit1">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="DMSDetailsBit">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="TxnRespCode">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="DMSreturnCode">
+                        <simple>'1'</simple>
+                    </setHeader>
+                </otherwise>
+            </choice>
+            <doCatch>
+                <exception>java.net.SocketTimeoutException</exception>
+                <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_5 Exception occured : ${exception.stacktrace}"></log>                <!--
+                <setBody><simple>{"returnCode":"998","responseMessage":"TimeOut"}</simple></setBody> -->
+                <setHeader name="DMSresponseBody">
+                    <simple>{"returnCode":"998","responseMessage":"Time Out From DMS"}</simple>
+                </setHeader>
+                <setHeader name="DMSreturnCode">
+                    <simple>998</simple>
+                </setHeader>
+                <setHeader name="DMSdatabit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PostTxnBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSdatabit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSDetailsBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="TxnRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSreturnCode">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_5 Exception occured ${exception.stacktrace}" loggingLevel="INFO" />
+                <setHeader name="DMSreturnCode">
+                    <simple>999</simple>
+                </setHeader>
+                <setHeader name="DMSresponseBody">
+                    <simple>{ "returnCode": "999", "responseMessage":"Internal Error" }</simple>
+                </setHeader>
+                <setHeader name="DMSdatabit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PostTxnBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSdatabit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSDetailsBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="TxnRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSreturnCode">
+                    <simple>'1'</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+        <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_6 Response Recieved From DMS_${body}"></log>
+        <removeHeaders pattern="*" excludePattern="breadcrumbId|Content-Type|CamelHttpResponseCode|authRespCode|token1|accountHistory|AccountHistorybit|DMSdatabit|DMSreturnCode|cbsreturnCode|authResponse|DMSresponseBody|CBSresponseBody|TxnPostingReq|PostTxnBit|DBFlag|DMSdatabit1|AccountHistorybit1|DMSDetailsBit|DMSDetailsConsent|DMSDetails" />
+    </route>
+    <route streamCache="true" id="RT_PassbookAssistedModeCBS">
+        <from uri="direct:accountHistorycall" />
+        <setBody>
+            <simple>${header.accountHistory}</simple>
+        </setBody>
+        <marshal>
+            <json />
+        </marshal>
+        <doTry>
+            <!-- <process ref="requestProcessor" /> -->
+            <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_7 Request Send To CBS_${body}"></log>
+            <process ref="requestProcessor" />
+            <!-- <to uri="cxfrs:bean:rsaccounthistoryv2?headerFilterStrategy=#fisHeaderFilter&amp;throwExceptionOnFailure=false" /> -->
+            <convertBodyTo type="java.lang.String"></convertBodyTo>
+            <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_8 Response Recieved From CBS_${body}"></log>            <!--
+            Hardcoded -->            <!--
+            <setBody><simple>{"returnCode":"0","responseMessage":"CBSHistory
+            Success"}</simple></setBody> -->            <!--
+            Hardcoded -->
+            <choice>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == '200'</simple>
+                    <setHeader name="cbsreturnCode">
+                        <jsonpath>$.returnCode</jsonpath>
+                    </setHeader>
+                    <setHeader name="CBSresponseBody">
+                        <simple>${body}</simple>
+                    </setHeader>
+                    <choice>
+                        <when>
+                            <simple>${header.cbsreturnCode} == '0'</simple>
+                            <setHeader name="AccountHistorybit1">
+                                <simple>0</simple>
+                            </setHeader>
+                            <setHeader name="cbsreturnCode">
+                                <simple>0</simple>
+                            </setHeader>
+                        </when>
+                        <otherwise>
+                            <log message="Inside ACCHIstory otherwise............ " loggingLevel="INFO" logName="com.fino.asynclog" />
+                            <setHeader name="AccountHistorybit1">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="cbsreturnCode">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="AccountHistorybit1">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="PostTxnBit">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="DMSdatabit1">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="DMSDetailsBit">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="TxnRespCode">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="DMSreturnCode">
+                                <simple>1</simple>
+                            </setHeader>
+                        </otherwise>
+                    </choice>
+                </when>
+                <otherwise>
+                    <doTry>
+                        <setHeader name="responseMessage">
+                            <jsonpath>$.responseMessage</jsonpath>
+                        </setHeader>
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <setHeader name="responseMessage">
+                                <simple>Internal Server Error</simple>
+                            </setHeader>
+                        </doCatch>
+                    </doTry>
+                    <doTry>
+                        <setHeader name="cbsreturnCode">
+                            <jsonpath>$.returnCode</jsonpath>
+                        </setHeader>
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <setHeader name="cbsreturnCode">
+                                <simple>${header.CamelHttpResponseCode}</simple>
+                            </setHeader>
+                        </doCatch>
+                    </doTry>
+                    <setHeader name="AccountHistorybit1">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="cbsreturnCode">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="AccountHistorybit1">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="PostTxnBit">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="DMSdatabit1">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="DMSDetailsBit">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="TxnRespCode">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="DMSreturnCode">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="CBSresponseBody">
+                        <simple>{"returnCode":"${header.cbsreturnCode}", "responseMessage": "${header.responseMessage}"}</simple>
+                    </setHeader>
+                </otherwise>
+            </choice>
+            <doCatch>
+                <exception>java.net.SocketTimeoutException</exception>
+                <log message="X-Correlation-Id_${header.x_cor_Id} | UserId_${header.Requestorid} | ESB_PassbookAssistedMode QUARK_STEP_8 RESPONSE SENT Exception Occured_${exception.stacktrace} " loggingLevel="INFO" logName="com.fino.asynclog" />
+                <setHeader name="CBSresponseBody">
+                    <simple>{"returnCode":"998","responseMessage":"Time Out From CBS"}</simple>
+                </setHeader>
+                <setHeader name="cbsreturnCode">
+                    <simple>998</simple>
+                </setHeader>
+                <setHeader name="Content-Type">
+                    <simple>application/json</simple>
+                </setHeader>
+                <setHeader name="AccountHistorybit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="cbsreturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="AccountHistorybit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PostTxnBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSdatabit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSDetailsBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="TxnRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSreturnCode">
+                    <simple>1</simple>
+                </setHeader>
+            </doCatch>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="X-Correlation-Id_${header.x_cor_Id} | UserId_${header.Requestorid} | ESB_PassbookAssistedMode QUARK_STEP_8 Exception occured ${exception}" loggingLevel="INFO" logName="com.fino.asynclog" />
+                <log message="X-Correlation-Id_${header.x_cor_Id} | UserId_${header.Requestorid} | ESB_PassbookAssistedMode QUARK_STEP_8 Exception occured ${exception.stacktrace}" loggingLevel="INFO" />
+                <setHeader name="CBSresponseBody">
+                    <simple>{"returnCode":"999","responseMessage":"Error Occured"}</simple>
+                </setHeader>
+                <setHeader name="cbsreturnCode">
+                    <simple>999</simple>
+                </setHeader>
+                <setHeader name="AccountHistorybit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="cbsreturnCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="AccountHistorybit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="PostTxnBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSdatabit1">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSDetailsBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="TxnRespCode">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="DMSreturnCode">
+                    <simple>'1'</simple>
+                </setHeader>
+            </doCatch>
+            <doFinally>
+                <setHeader name="Content-Type">
+                    <simple>application/json</simple>
+                </setHeader>                <!-- <log message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RId} |
+                RESPONSE SENT TO USER_ ${body}" loggingLevel="INFO" logName="com.fino.asynclog" /> -->
+                <removeHeaders pattern="*" excludePattern="Breadcrumbid|Content-Type|Server|X-Application-Context|CamelHttpResponseCode|authRespCode|token1|AccountHistorybit|DMSdatabit|DMSreturnCode|cbsreturnCode|authResponse|DMSresponseBody|CBSresponseBody|DMSDetails|TxnPostingReq|PostTxnBit|DBFlag|DMSdatabit1|AccountHistorybit1|DMSDetailsBit|DMSDetailsPhoto"></removeHeaders>
+            </doFinally>
+        </doTry>
+    </route>
+    <route id="RT7_ESB_PassbookAssistedMode_TxnCallCBS" streamCache="true">
+        <from uri="direct:TxnPosting" />
+        <setBody>
+            <simple>${header.TxnPostingReq}</simple>
+        </setBody>
+        <bean ref="DBInsert" method="RequesttxnDetails" />
+        <marshal>
+            <json />
+        </marshal>
+        <removeHeader name="TxnPostingReq" />
+        <!-- Request of Txn Insert into Database -->
+        <choice>
+            <when>
+                <simple>${header.DBFlag} == 'Y'</simple>
+                <setHeader name="TransactionQueryReq">
+                    <simple>{"Insert_Type": "0","requestType": "1","ACCTNUM": "${header.AccDetails}", "PCODE": "${header.TranType}", "MSGTYPE": "0","TRACE": "${header.referenceNo}","AMOUNT": "${header.amt}","TERMID": "${header.RequestorId}", "CH_AMOUNT": "", "AMOUNT_EQUIV": "","Support_data": "${header.supportData}", "Credit_Debit_Flag": "${header.creditDebitFlag}","appId": "${header.appId}", "isInclusive": "${header.isInclusive}","Method_Id": "${header.MethodId}","Source_Id": "","Biller_Id": "","Payment_Channel_Id": "${header.appId}","TXNSRC":"${header.appId}","TXNDEST":"CBS","Payment_Type": "CASH DEPOSIT","MerchantMobileNo": "null","RemeMobileNo": "null","RemeName": "null","BeneBankName": "null","BeneBranchName": "null","X_CORRELATION_ID":"${header.X-Correlation-Id}","CostCenter":"${header.costCenter}","Layer":"ESB"} </simple>
+                </setHeader>
+                <doTry>
+                    <to pattern="InOnly" uri="activemq:queue:TransactionQueue" />
+                    <removeHeader name="TransactionQueryReq" />
+                    <doCatch>
+                        <exception>java.lang.Exception</exception>
+                        <log message="Exception Occured while que insert: ${exception.stacktrace}"></log>
+                        <removeHeader name="TransactionQueryReq" />
+                    </doCatch>
+                </doTry>
+            </when>
+        </choice>
+        <!-- <process ref="requestProcessor" /> -->
+        <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_9 Request Send To CBS_${body}"></log>
+        <doTry>
+
+            <bean ref="requestProcessor" method="rsTxnCall" />
+            <!-- <to uri="cxfrs:bean:rsTxnCall?throwExceptionOnFailure=false&amp;headerFilterStrategy=#fisHeaderFilter" /> -->
+            <convertBodyTo type="java.lang.String"></convertBodyTo>
+            <choice>
+                <when>
+                    <simple>${header.CamelHttpResponseCode} == '200'</simple>
+                    <setHeader name="TxnRespCode">
+                        <jsonpath>$.returnCode</jsonpath>
+                    </setHeader>
+                    <setHeader name="TrasactionResponse">
+                        <simple>${body}</simple>
+                    </setHeader>
+                    <choice>                        <!-- <when> <simple>${header.TxnRespCode} == '0' and ${header.amt} ==
+                        '0'</simple> <setHeader name="referenceNo"><jsonpath>$.txnReferenceNo</jsonpath></setHeader>
+                        <setHeader name="cbsTxnReferenceNo"><jsonpath>$.cbsTxnReferenceNo</jsonpath></setHeader>
+                        <setHeader name="availableBalance"><jsonpath>$.balancesList[0].availableBalance</jsonpath></setHeader>
+                        <setHeader name="GLavailableBalance"><jsonpath>$.balancesList[1].availableBalance</jsonpath></setHeader>
+                        <to uri="seda:SendSMS?waitForTaskToComplete=Never"/> </when> -->
+                        <when>
+                            <simple>${header.TxnRespCode} == '0'</simple>
+                            <doTry>
+                                <setHeader name="referenceNo">
+                                    <jsonpath>$.txnReferenceNo</jsonpath>
+                                </setHeader>
+                                <setHeader name="cbsTxnReferenceNo">
+                                    <jsonpath>$.cbsTxnReferenceNo</jsonpath>
+                                </setHeader>
+                                <setHeader name="availableBalance">
+                                    <jsonpath>$.balancesList[0].availableBalance</jsonpath>
+                                </setHeader>
+                                <doCatch>
+                                    <exception>java.lang.Exception</exception>
+                                    <setHeader name="referenceNo">
+                                        <simple>0</simple>
+                                    </setHeader>
+                                    <setHeader name="cbsTxnReferenceNo">
+                                        <simple>0</simple>
+                                    </setHeader>
+                                    <setHeader name="availableBalance">
+                                        <simple>0</simple>
+                                    </setHeader>
+                                </doCatch>
+                            </doTry>
+                            <setHeader name="PostTxnBit">
+                                <simple>0</simple>
+                            </setHeader>
+                            <setHeader name="TxnRespCode">
+                                <simple>0</simple>
+                            </setHeader>
+                        </when>
+                        <otherwise>
+                            <setHeader name="responseMsg">
+                                <jsonpath>$.responseMessage</jsonpath>
+                            </setHeader>
+                            <setHeader name="PostTxnBit">
+                                <simple>1</simple>
+                            </setHeader>
+                            <setHeader name="TxnRespCode">
+                                <simple>1</simple>
+                            </setHeader>
+                        </otherwise>
+                    </choice>                    <!--<wireTap uri="direct:DBResponseInsert"/>-->
+                    <to uri="seda:DBResponseInsert?waitForTaskToComplete=Never" />
+                </when>
+                <otherwise>                    <!-- <simple>${header.CamelHttpResponseCode} == '401' or
+                    ${header.CamelHttpResponseCode} == '404' or ${header.CamelHttpResponseCode} ==
+                    '500'</simple> <setHeader name="TxnRespCode"><simple>1</simple></setHeader>
+                    <setHeader name="TrasactionResponse"><simple>${body}</simple></setHeader> -->
+                    <doTry>
+                        <setHeader name="TxnRespCode">
+                            <jsonpath>$.returnCode</jsonpath>
+                        </setHeader>
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <setHeader name="TxnRespCode">
+                                <simple>${header.CamelHttpResponseCode}</simple>
+                            </setHeader>
+                        </doCatch>
+                    </doTry>
+                    <doTry>
+                        <setHeader name="responseMsg">
+                            <jsonpath>$.responseMessage</jsonpath>
+                        </setHeader>
+                        <doCatch>
+                            <exception>java.lang.Exception</exception>
+                            <setHeader name="responseMsg">
+                                <simple>Internal Server Error</simple>
+                            </setHeader>
+                        </doCatch>
+                    </doTry>
+                    <setHeader name="TrasactionResponse">
+                        <simple>{"returnCode":"${header.TxnRespCode}","responseMessage":"${header.responseMsg}"}</simple>
+                    </setHeader>
+                    <setHeader name="PostTxnBit">
+                        <simple>1</simple>
+                    </setHeader>
+                    <setHeader name="TxnRespCode">
+                        <simple>1</simple>
+                    </setHeader>
+                </otherwise>
+            </choice>
+            <log message="X-Correlation-Id_${header.X-Correlation-Id} | UseRId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_9 Response Recieved From CBS_${body}"></log>
+            <doCatch>
+                <exception>java.net.SocketTimeoutException</exception>
+                <log message="X-Correlation-Id_${header.X_correlation_id} | UserId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_10 RESPONSE SENT Exception Occured_${exception.stacktrace} " loggingLevel="INFO" logName="com.fino.asynclog" />
+                <setBody>
+                    <simple>{"returnCode":"998","responseMessage":"Time Out From CBS"}</simple>
+                </setBody>
+                <setHeader name="TxnRespCode">
+                    <simple>998</simple>
+                </setHeader>
+                <setHeader name="responseMessage">
+                    <simple>Time Out From CBS</simple>
+                </setHeader>
+                <setHeader name="Content-Type">
+                    <simple>application/json</simple>
+                </setHeader>
+                <setHeader name="PostTxnBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="TrasactionResponse">
+                    <simple>{"returnCode":"${header.TxnRespCode}","responseMessage":"${header.responseMsg}"}</simple>
+                </setHeader>
+            </doCatch>
+            <doCatch>
+                <exception>java.lang.Exception</exception>
+                <log message="X-Correlation-Id_${header.X_correlation_id} | UserId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_10 Exception occured ${exception}" loggingLevel="INFO" logName="com.fino.asynclog" />
+                <log message="X-Correlation-Id_${header.X_correlation_id} | UserId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_10 Exception occured ${exception.stacktrace}" loggingLevel="INFO" />
+                <setBody>
+                    <simple>{"returnCode":"999","responseMessage":"${exception}"}</simple>
+                </setBody>
+                <setHeader name="TxnRespCode">
+                    <simple>999</simple>
+                </setHeader>
+                <setHeader name="responseMessage">
+                    <simple>Error Occured</simple>
+                </setHeader>
+                <setHeader name="PostTxnBit">
+                    <simple>1</simple>
+                </setHeader>
+                <setHeader name="TrasactionResponse">
+                    <simple>{"returnCode":"${header.TxnRespCode}","responseMessage":"${header.responseMsg}"}</simple>
+                </setHeader>
+            </doCatch>
+        </doTry>
+    </route>
+    <route id="RT7_ValidateSecretQuestWithUpdateCustomer_DMSDetails" streamCache="true">
+        <from uri="direct:DMSCall" />
+        <setBody>
+            <simple>${header.DMSDetails}</simple>
+        </setBody>
+        <log message="DMSDetailBody......... ${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+        <bean ref="DBInsert" method="consentChange" />
+        <bean ref="DBInsert" method="createDMSRequests" />
+        <loop>
+            <header>DMSListSize</header>
+            <setBody>
+                <simple>${header.dmsRequest${header[CamelLoopIndex]}}</simple>
+            </setBody>
+            <removeHeader name="CamelHttpMethod" />
+            <removeHeader name="CamelHttpUri" />
+            <removeHeader name="CamelRestletRequest" />
+            <removeHeader name="CamelRestletResponse" />
+            <removeHeader name="Content-Type" />
+            <removeHeader name="charset" />
+            <removeHeader name="org.restlet.http.headers" />
+            <removeHeader name="org.restlet.startTime" />
+            <!-- <removeHeader name="updateAccount" /> -->
+            <removeHeader name="org.restlet.startTime" />
+            <!-- <removeHeader name="updateCustomer" /> -->
+            <setHeader name="Content-Type">
+                <simple>application/json</simple>
+            </setHeader>
+            <marshal>
+                <json />
+            </marshal>
+            <log message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_11 REQUEST SENT TO DMS SERVICE ${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+            <to pattern="InOnly" uri="activemq:queue:DMSQueue" />
+            <log message="X-Correlation-Id_${header.X-Correlation-Id} | UserId_${header.RequestorId} | ESB_PassbookAssistedMode QUARK_STEP_12 RESPONSE RECEIVE FROM DMS SERVICE ${body}" loggingLevel="INFO" logName="com.fino.asynclog" />
+        </loop>
+        <setHeader name="DMSResponse">
+            <simple>{"returnCode":"0"}</simple>
+        </setHeader>
+        <setHeader name="DMSRespCode">
+            <simple>0</simple>
+        </setHeader>
+        <setHeader name="DMSDetailsBit">
+            <simple>0</simple>
+        </setHeader>
+    </route>
+    <route id="RT9_ESB_PassbookAssistedMode_DBResponse" streamCache="true">        <!--<from uri="direct:DBResponseInsert"/>-->
+        <from uri="seda:DBResponseInsert?concurrentConsumers={{minConcurrentConsumers}}" />
+        <choice>
+            <when>
+                <simple>${header.DBFlag} == 'Y'</simple>
+                <setHeader name="TransactionQueryReq">
+                    <simple>{"Insert_Type": "1","Request_Type": "1","ACCTNUM": "${header.AccDetails}","PCODE": "${header.TranType}","MSGTYPE": "0","RESPCODE": "${header.TxnRespCode}","Response_Msg": "${header.responseMsg}","TRACE": "${header.referenceNo}","REFNUM": "${header.cbsTxnReferenceNo}","AMOUNT": "${header.amt}","TERMID": "${header.RId}","Ledger_Balance": "${header.availableBalance}","GL_Ledger_Balance": "","Payment_Status": "${header.paymentReqResponseCode}","Bene_AccNo": "null","BeneIFSC": "null","File_Id": "0","BeneName": "null","X_CORRELATION_ID":"${header.X-Correlation-Id}"}</simple>
+                </setHeader>
+                <doTry>
+                    <to pattern="InOnly" uri="activemq:queue:TransactionQueue" />
+                    <removeHeader name="TransactionQueryReq" />
+                    <removeHeader name="responseMsg" />
+                    <removeHeader name="cbsTxnReferenceNo" />
+                    <removeHeader name="GlAvailableBalance" />
+                    <removeHeader name="paymentReqResponseCode" />
+                    <doCatch>
+                        <exception>java.lang.Exception</exception>
+                        <log message="Exception Occured while que insert: ${exception.stacktrace}"></log>
+                        <removeHeader name="TransactionQueryReq" />
+                    </doCatch>
+                </doTry>
+            </when>
+        </choice>
+    </route>
+</routes>
