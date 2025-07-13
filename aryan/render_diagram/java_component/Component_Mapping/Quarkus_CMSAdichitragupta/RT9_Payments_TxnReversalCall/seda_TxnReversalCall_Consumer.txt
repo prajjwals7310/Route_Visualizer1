@@ -1,0 +1,31 @@
+Direction: Consumer
+Component: seda
+
+Attribute                      Default              Specification                 
+------------------------------------------------------------
+
+basicPropertyBinding           false                                              
+synchronous                    false                                              
+pollTimeout                    1000                                               
+blockWhenFull                  false                                              
+discardWhenFull                false                                              
+timeout                        30000                                              
+bridgeErrorHandler             false                                              
+discardIfNoConsumers           false                                              
+multipleConsumers              false                                              
+queueSize                      1000                                               
+defaultQueueFactory                                                               
+exchangePattern                                                                   
+failIfNoConsumers              false                                              
+waitForTaskToComplete          IfReplyExpected                                    
+defaultDiscardWhenFull         false                                              
+limitConcurrentConsumers       true                                               
+concurrentConsumers            1                                                  
+defaultOfferTimeout                                                               
+lazyStartProducer              false                                              
+offerTimeout                                                                      
+size                           1000                                               
+defaultBlockWhenFull           false                                              
+exceptionHandler                                                                  
+purgeWhenStopping              false                                              
+queue                                                                             

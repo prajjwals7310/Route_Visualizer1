@@ -1,0 +1,55 @@
+Direction: Producer
+Component: sql
+
+Attribute                      Default              Specification                 
+------------------------------------------------------------
+
+synchronous                    false                                              
+initialDelay                   1000                                               
+usePlaceholder                 true                                               
+allowNamedParameters           true                                               
+templateOptions                                                                   
+bridgeErrorHandler             false                                              
+greedy                         false                                              
+maxMessagesPerPoll                                                                
+scheduledExecutorService                                                          
+repeatCount                    0                                                  
+query                                                                             
+sendEmptyMessageWhenIdle       false                                              
+schedulerProperties                                                               
+batch                          false                                              
+separator                      ,                                                  
+backoffIdleThreshold                                                              
+processingStrategy                                                                
+prepareStatementStrategy                                                          
+lazyStartProducer              false                                              
+delay                          500                                                
+startScheduler                 true                                               
+outputClass                                                                       
+dataSource                                                                        
+exceptionHandler                                                                  
+basicPropertyBinding           false                                              
+backoffMultiplier                                                                 
+breakBatchOnConsumeFail        false                                              
+onConsume                                                                         
+onConsumeFailed                                                                   
+useMessageBodyForSql           false                                              
+dataSourceRef                                                                     
+outputType                     SelectList                                         
+transacted                     false                                              
+useIterator                    true                                               
+parametersCount                                                                   
+scheduler                      none                                               
+noop                           false                                              
+useFixedDelay                  true                                               
+runLoggingLevel                TRACE                                              
+backoffErrorThreshold                                                             
+placeholder                    #                                                  
+timeUnit                       MILLISECONDS                                       
+onConsumeBatchComplete                                                            
+exchangePattern                                                                   
+routeEmptyResultSet            false                                              
+alwaysPopulateStatement        false                                              
+outputHeader                                                                      
+pollStrategy                                                                      
+expectedUpdateCount            -1                                                 

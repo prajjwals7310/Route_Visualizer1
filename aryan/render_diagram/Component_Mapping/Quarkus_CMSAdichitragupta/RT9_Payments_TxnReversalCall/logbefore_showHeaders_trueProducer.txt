@@ -1,0 +1,34 @@
+Direction: Producer
+Component: log
+
+Attribute                      Default              Specification                 
+------------------------------------------------------------
+
+showHeaders                    false                true                          
+basicPropertyBinding           false                                              
+showProperties                 false                                              
+showStreams                    false                                              
+showException                  false                                              
+synchronous                    false                                              
+showExchangeId                 false                                              
+logMask                                                                           
+groupActiveOnly                true                                               
+showFiles                      false                                              
+showAll                        false                                              
+exchangeFormatter                                                                 
+maxChars                       10000                                              
+loggerName                                                                        
+level                          INFO                                               
+groupDelay                                                                        
+showExchangePattern            true                                               
+showBodyType                   true                                               
+showFuture                     false                                              
+showCaughtException            false                                              
+showStackTrace                 false                                              
+skipBodyLineSeparator          true                                               
+lazyStartProducer              false                                              
+marker                                                                            
+multiline                      false                                              
+groupSize                                                                         
+showBody                       true                                               
+groupInterval                                                                     

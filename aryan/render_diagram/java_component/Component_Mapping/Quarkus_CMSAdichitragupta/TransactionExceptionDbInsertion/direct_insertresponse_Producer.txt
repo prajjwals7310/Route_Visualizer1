@@ -1,0 +1,15 @@
+Direction: Producer
+Component: direct
+
+Attribute                      Default              Specification                 
+------------------------------------------------------------
+
+basicPropertyBinding           false                                              
+lazyStartProducer              false                                              
+bridgeErrorHandler             false                                              
+synchronous                    false                                              
+exchangePattern                                                                   
+failIfNoConsumers              true                                               
+block                          true                                               
+exceptionHandler                                                                  
+timeout                        30000                                              

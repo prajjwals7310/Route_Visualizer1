@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Route Visualizer</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #ecf0f3;
+      overflow: hidden;
+    }
+    .layout {
+      display: flex;
+      height: 100%;
+    }
+.sidebar {
+  width: 300px;
+  background: #1f2a38;
+  color: white;
+  padding: 5em 1em 1em 1em;
+  overflow-y: auto; /* ← Keep this if the content exceeds height */
+  max-height: 100vh; /* NEW: restrict to full viewport */
+  scrollbar-width: none; /* Firefox */
+  overflow: visible; 
+}
+.sidebar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+.diagram {
+  flex: 1;
+  overflow: visible;
+  background: linear-gradient(to bottom right, #f0f2f5, #e6ecf0);
+  position: relative;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+
+    .route-id {
+      display: block;
+      margin: 10px 0 5px;
+      padding: 6px 10px;
+      background: #2980b9;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .route-link {
+      display: none;
+      margin: 5px 0;
+      padding: 6px 10px;
+      color: #fff;
+      background: #34495e;
+      border-radius: 4px;
+      text-decoration: none;
+      transition: background 0.2s;
+      word-wrap: break-word;
+    }
+    .route-link:hover {
+      background: #1abc9c;
+    }
+    .route-link.active {
+      background: #16a085;
+    }
+    .node rect {
+      stroke: #34495e;
+      stroke-width: 2px;
+      rx: 10;
+      ry: 10;
+      filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.1));
+    }
+    .label-text {
+      font-size: 13px;
+      font-weight: bold;
+      fill: #2c3e50;
+    }
+    .link {
+      fill: none;
+      stroke: #bbb;
+      stroke-opacity: 0.7;
+      stroke-width: 2px;
+    }
+
+.tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.9);
+  color: #f8f8f2;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'Courier New', Courier, monospace;
+  display: none;
+  white-space: pre-wrap;
+  max-width: 600px; /* or increase if needed */
+  /* max-height: 300px; */ /* 🔥 removed */
+  /* overflow-y: auto; */  /* 🔥 removed */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  line-height: 1.4em;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+
+
+    .wrapped-text tspan {
+      font-size: 11px;
+    }
+
+
+.git-form {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 1.2em 2em;
+  background: #1f2a38;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.git-form label {
+  color: #fff;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.git-form input[type="text"] {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #34495e;
+  background: #f4f4f4;
+  font-size: 14px;
+}
+
+.git-form button {
+  padding: 10px 20px;
+  background: #1abc9c;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.git-form button:hover {
+  background: #16a085;
+}
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 12px;
+}
+.info-table th,
+.info-table td {
+  border: 1px solid #666;
+  padding: 4px 8px;
+  color: #eee;
+  text-align: left;
+}
+.info-table th {
+  background-color: #333;
+  font-weight: bold;
+}
+
+
+  </style>
+</head>
+<body>
+
+<form method="POST" action="/" class="git-form">
+  <label for="repo_url">Git Repo URL:</label>
+  <input type="text" name="repo_url" id="repo_url" required placeholder="https://github.com/user/repo.git">
+  <label for="camel_version">Camel Version:</label>
+  <input type="text" name="camel_version" id="camel_version" placeholder="3.6.x" value="3.6.x">
+  <button type="submit">🚀 Clone</button>
+</form>
+
+{% if error %}
+  <div style="color:red; padding: 1em;">{{ error }}</div>
+{% endif %}
+
+<div class="layout">
+  <div class="sidebar">
+    <h2>Routes</h2>
+    {% for file_idx in range(file_routes_list|length) %}
+      {% set file = file_routes_list[file_idx] %}
+      <div class="route-id" onclick="toggleRoutes('{{ file_idx }}')">
+        {{ file.routes_block_id }}
+      </div>
+      {% for route_idx in range(file.routes|length) %}
+      <a href="#" class="route-link route-group-{{ file_idx }}"
+         data-file="{{ file_idx }}"
+         data-route="{{ route_idx }}"
+         data-routeid="{{ file.routes[route_idx].route_id }}">
+         {{ file.routes[route_idx].route_id }}
+      </a>
+      {% endfor %}
+    {% endfor %}
+  </div>
+  <div class="diagram" id="tree-container"></div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+function toggleRoutes(fileIdx) {
+  document.querySelectorAll(`.route-group-${fileIdx}`).forEach(link => {
+    link.style.display = link.style.display === 'block' ? 'none' : 'block';
+  });
+}
+</script>
+
+{% if file_routes %}
+<script>
+const routes = {{ file_routes | tojson | safe }};
+const infoMap = {{ info_map | tojson | safe }};
+
+function isInternalRoute(label) {
+  return /to:\s*(direct|seda|vm|log):/i.test(label);
+}
+
+function jumpToInternalRoute(label) {
+  const match = label.match(/to:\s*(direct|seda|vm|log):(.+)/i);
+  if (!match) {
+    alert("⚠️ Could not parse internal route: " + label);
+    return;
+  }
+
+  const protocol = match[1].toLowerCase();
+  const target = match[2].trim().toLowerCase();
+
+  for (let fileIdx = 0; fileIdx < routes.length; fileIdx++) {
+    const file = routes[fileIdx];
+    for (let routeIdx = 0; routeIdx < file.routes.length; routeIdx++) {
+      const route = file.routes[routeIdx];
+      const routeName = route.name?.toLowerCase() || "";
+
+      if (routeName.startsWith(`from: ${protocol}:`)) {
+        const routeValue = routeName.replace(`from: ${protocol}:`, '').trim();
+        if (routeValue === target) {
+          renderTree(route, fileIdx, routeIdx);
+          return;
+        }
+      }
+    }
+  }
+
+  alert(`⚠️ No route found for 'from: ${protocol}:${target}'`);
+}
+
+function getImageForNode(label, type) {
+  const keyword = label.toLowerCase();
+
+  switch (type) {
+    case "seda": return "seda.png";
+    case "to": return "to.png";
+    case "choice": return "choice.png";
+    case "when": return "when.png";
+    case "otherwise": return "otherwise.png";
+    case "doCatch": return "catch.png";
+  }
+
+  if (keyword.includes("choice")) return "choice.png";
+  if (keyword.includes("catch")) return "catch.png";
+  if (keyword.includes("otherwise")) return "otherwise.png";
+  if (keyword.includes("when")) return "when.png";
+  if (keyword.includes("direct")) return "direct.jpeg";
+  if (keyword.includes("sql")) return "sql.png";
+  if (keyword.includes("jdbc")) return "jdbc2.png";
+  if (keyword.includes("seda")) return "seda.png";
+  if (keyword.includes("try")) return "try.png";
+  if (keyword.includes("restlet")) return "Restlet.jpg";
+  if (keyword.includes("cxf")) return "cxf.png";
+  if (keyword.includes("cxfrs")) return "cxfrs.png";
+  if (keyword.includes("activemq")) return "ActiveMQ.png";
+  if (keyword.includes("reposta")) return "reposta.png";
+  if (keyword.includes("repostingactivemq")) return "repostingactivemq.png";
+  if (keyword.includes("to")) return "to.png";
+  return null;
+}
+
+function wrapText(text, width) {
+  text.each(function () {
+    const text = d3.select(this);
+    const words = text.text().split(/\s+/).reverse();
+    let word, line = [], lineNumber = 0;
+    const lineHeight = 1.1;
+    const y = text.attr("y") || 0;
+    const dy = parseFloat(text.attr("dy")) || 0;
+    let tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+    while (word = words.pop()) {
+      line.push(word);
+      tspan.text(line.join(" "));
+      if (tspan.node().getComputedTextLength() > width - 10) {
+        line.pop();
+        tspan.text(line.join(" "));
+        line = [word];
+        tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+      }
+    }
+  });
+}
+
+function renderTree(routeData, fileIdx, routeIdx) {
+  const tooltip = document.getElementById("tooltip");
+  document.getElementById("tree-container").innerHTML = "";
+  document.querySelectorAll(".route-link").forEach(l => l.classList.remove("active"));
+  document.querySelector(`.route-link[data-file='${fileIdx}'][data-route='${routeIdx}']`)?.classList.add("active");
+
+  const root = d3.hierarchy(routeData, d => d.children);
+  root.x0 = 0;
+  root.y0 = 0;
+  root.descendants().forEach(d => {
+    d._children = d.children;
+    d.children = null;
+  });
+
+  const svgRoot = d3.select("#tree-container")
+    .append("svg")
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("id", "tree-svg");
+
+  const g = svgRoot.append("g");
+
+function update(source) {
+  const tree = d3.tree().nodeSize([100, 200]);
+  tree(root);
+
+  const nodes = root.descendants();
+  const links = root.links();
+
+  const maxX = d3.max(nodes, d => d.x) + 200;
+  const maxY = d3.max(nodes, d => d.y) + 400;
+
+  const windowHeight = window.innerHeight;
+  const treeHeight = maxX;
+
+  // ✅ Adjust these for position:
+  const verticalOffset = Math.max((windowHeight - treeHeight) / 2 + 200, 100);  // push further down
+  const horizontalOffset = -30;  // slight left shift
+
+  svgRoot.attr("height", Math.max(treeHeight + 300, windowHeight))
+         .attr("viewBox", `0 0 ${maxY + 300} ${Math.max(treeHeight + 300, windowHeight)}`);
+
+  g.attr("transform", `translate(${horizontalOffset}, ${verticalOffset})`);
+
+  g.selectAll(".link").remove();
+  g.selectAll(".node").remove();
+
+  g.selectAll(".link")
+    .data(links)
+    .enter().append("path")
+    .attr("class", "link")
+    .attr("d", d3.linkHorizontal().x(d => d.y).y(d => d.x));
+
+  const node = g.selectAll(".node")
+    .data(nodes, d => d.data.name)
+    .join(
+      enter => {
+        const gEnter = enter.append("g")
+          .attr("class", "node")
+          .attr("transform", d => `translate(${d.y},${d.x})`)
+          .on("click", function(event, d) {
+            tooltip.style.display = "none";
+            if (isInternalRoute(d.data.name)) {
+              jumpToInternalRoute(d.data.name);
+            } else {
+              d.children = d.children ? null : d._children;
+              update(d);
+            }
+          });
+
+        gEnter.each(function(d) {
+          const g = d3.select(this);
+          const icon = getImageForNode(d.data.name, d.data.type);
+
+          if (icon) {
+            g.append("image")
+              .attr("xlink:href", `/images/${icon}`)
+              .attr("x", -25)
+              .attr("y", -25)
+              .attr("width", 50)
+              .attr("height", 50)
+              .attr("preserveAspectRatio", "xMidYMid meet");
+          } else {
+            const labelText = g.append("text")
+              .attr("text-anchor", "middle")
+              .attr("dy", "0.35em")
+              .attr("x", 0)
+              .attr("y", 0)
+              .attr("fill", "#fff")
+              .style("font-weight", "bold")
+              .classed("wrapped-text", true)
+              .text(d.data.name);
+            wrapText(labelText, 85);
+          }
+
+          g.insert("rect", ":first-child")
+            .attr("x", -45)
+            .attr("y", -45)
+            .attr("width", 90)
+            .attr("height", 90)
+            .attr("fill", d => {
+              const label = d.data.name || "";
+              if (label.startsWith("from")) return "#2980b9";
+              if (label.startsWith("to")) return "#27ae60";
+              if (label.startsWith("when")) return "#8e44ad";
+              if (label === "otherwise") return "#c0392b";
+              if (label.startsWith("catch")) return "#e67e22";
+              return "#3498db";
+            })
+            .attr("stroke", "#34495e")
+            .attr("stroke-width", 2)
+            .attr("rx", 10)
+            .attr("ry", 10);
+        });
+
+        return gEnter;
+      }
+    );
+
+  node.on("mouseover", function(event, d) {
+    tooltip.style.display = "block";
+    let content = `<div><strong>${d.data.name}</strong></div>`;
+
+    if (d.data.info) {
+      const lines = d.data.info.split("\n");
+      const metadataLines = [];
+      const tableRows = [];
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.toLowerCase().startsWith("attribute") || /^[-]+$/.test(trimmed)) continue;
+        if (trimmed.includes(":") && tableRows.length === 0) {
+          metadataLines.push(trimmed);
+        } else {
+          tableRows.push(trimmed);
+        }
+      }
+
+      content += metadataLines.map(l => `<div>${l}</div>`).join("");
+
+      if (tableRows.length > 0) {
+        const rowsHtml = tableRows.map(line => {
+          const cols = line.trim().split(/\s+/);
+          const [attr, def, ...spec] = cols;
+          return `<tr><td>${attr || ""}</td><td>${def || ""}</td><td>${spec.join(" ") || ""}</td></tr>`;
+        }).join("");
+
+        content += `<table class="info-table">
+                      <thead><tr><th>Attribute</th><th>Default</th><th>Specification</th></tr></thead>
+                      <tbody>${rowsHtml}</tbody>
+                    </table>`;
+      }
+    } else {
+      let key = d.data.info_key;
+      if (key && infoMap && infoMap.hasOwnProperty(key.toLowerCase())) {
+        content += `<div>${infoMap[key.toLowerCase()]}</div>`;
+      }
+    }
+
+    tooltip.innerHTML = content;
+  })
+  .on("mousemove", function(event) {
+    const tooltipBox = tooltip.getBoundingClientRect();
+    const pageWidth = window.innerWidth;
+    const pageHeight = window.innerHeight;
+
+    let left = event.pageX + 10;
+    let top = event.pageY + 10;
+
+    if (left + tooltipBox.width > pageWidth - 20) {
+      left = pageWidth - tooltipBox.width - 20;
+    }
+
+    if (top + tooltipBox.height > pageHeight - 20) {
+      top = pageHeight - tooltipBox.height - 20;
+    }
+
+    tooltip.style.left = left + "px";
+    tooltip.style.top = top + "px";
+  })
+  .on("mouseout", function() {
+    tooltip.style.display = "none";
+  });
+}
+
+  update(root);
+}
+
+document.querySelectorAll(".route-link").forEach(link => {
+  link.addEventListener("click", e => {
+    e.preventDefault();
+    const fileIndex = parseInt(link.getAttribute("data-file"));
+    const routeIndex = parseInt(link.getAttribute("data-route"));
+    const route = routes[fileIndex].routes[routeIndex];
+    if (route) {
+      renderTree(route, fileIndex, routeIndex);
+    }
+  });
+});
+
+if (routes.length > 0 && routes[0].routes.length > 0) {
+  renderTree(routes[0].routes[0], 0, 0);
+}
+</script>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,23 @@
+Direction: Producer
+Component: jdbc
+
+Attribute                      Default              Specification                 
+------------------------------------------------------------
+
+basicPropertyBinding           false                                              
+resetAutoCommit                true                                               
+synchronous                    false                                              
+outputType                     SelectList                                         
+transacted                     false                                              
+useHeadersAsParameters         false                                              
+allowNamedParameters           true                                               
+dataSourceName                                                                    
+prepareStatementStrategy                                                          
+lazyStartProducer              false                                              
+beanRowMapper                                                                     
+useGetBytesForBlob             false                                              
+outputClass                                                                       
+useJDBC4ColumnNameAndLabel{zwsp}Semantics true                                               
+dataSource                                                                        
+parameters                                                                        
+readSize                                                                          

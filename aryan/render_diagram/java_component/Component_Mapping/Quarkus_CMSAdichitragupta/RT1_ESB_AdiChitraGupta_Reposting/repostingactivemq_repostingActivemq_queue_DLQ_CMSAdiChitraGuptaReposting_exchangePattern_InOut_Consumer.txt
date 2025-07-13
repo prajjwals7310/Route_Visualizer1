@@ -1,0 +1,110 @@
+Direction: Consumer
+Component: repostingactivemq
+
+Attribute                      Default              Specification                 
+------------------------------------------------------------
+
+exchangePattern                                     InOut                         
+includeSentJMSMessageID        false                                              
+asyncConsumer                  false                                              
+mapJmsMessage                  true                                               
+synchronous                    false                                              
+eagerLoadingOfProperties       false                                              
+password                                                                          
+replyToMaxConcurrentConsumers                                                     
+deliveryMode                                                                      
+transferException              false                                              
+asyncStartListener             false                                              
+eagerPoisonBody                Poison JMS message due to ${exception.message}                               
+artemisStreamingEnabled        true                                               
+maxConcurrentConsumers                                                            
+taskExecutor                                                                      
+messageListenerContainer{zwsp}Factory                                                    
+priority                       4                                                  
+allowAutoWiredConnection{zwsp}Factory true                                               
+acknowledgementModeName        AUTO_ACKNOWLEDGE                                   
+exposeListenerSession          false                                              
+receiveTimeout                 1000                                               
+usePooledConnection            true                                               
+replyTo                                                                           
+replyToOverride                                                                   
+errorHandlerLoggingLevel       WARN                                               
+errorHandler                                                                      
+trustAllPackages               false                                              
+waitForProvisionCorrelationTo{zwsp}BeUpdatedThreadSleepingTime 100                                                
+allowReplyManagerQuickStop     false                                              
+messageConverter                                                                  
+maxMessagesPerTask             -1                                                 
+jmsKeyFormatStrategy                                                              
+streamMessageTypeEnabled       false                                              
+headerFilterStrategy                                                              
+destinationName                                                                   
+allowAdditionalHeaders                                                            
+clientId                                                                          
+recoveryInterval               5000                                               
+replyToCacheLevelName                                                             
+messageIdEnabled               true                                               
+waitForProvisionCorrelationTo{zwsp}BeUpdatedCounter 50                                                 
+allowSerializedHeaders         false                                              
+preserveMessageQos             false                                              
+brokerURL                                                                         
+connectionFactory                                                                 
+testConnectionOnStartup        false                                              
+subscriptionName                                                                  
+useMessageIDAsCorrelationID    false                                              
+cacheLevelName                 CACHE_AUTO                                         
+idleTaskExecutionLimit         1                                                  
+requestTimeoutCheckerInterval  1000                                               
+includeAllJMSXProperties       false                                              
+cacheLevel                                                                        
+errorHandlerLogStackTrace      true                                               
+transactedInOut                false                                              
+useSingleConnection            false                                              
+timeToLive                     -1                                                 
+allowAutoWiredDestination{zwsp}Resolver true                                               
+exceptionListener                                                                 
+destinationType                queue                                              
+transactionManager                                                                
+alwaysCopyMessage              false                                              
+replyToConcurrentConsumers     1                                                  
+replyToDestinationSelectorName                                                    
+disableTimeToLive              false                                              
+deliveryPersistent             true                                               
+concurrentConsumers            1                                                  
+acceptMessagesWhileStopping    false                                              
+lazyStartProducer              false                                              
+subscriptionDurable            false                                              
+destinationResolver                                                               
+exceptionHandler                                                                  
+basicPropertyBinding           false                                              
+idleConsumerLimit              1                                                  
+configuration                                                                     
+explicitQosEnabled             false                                              
+transacted                     false                                              
+transactionName                                                                   
+correlationProperty                                                               
+autoStartup                    true                                               
+messageTimestampEnabled        true                                               
+lazyCreateTransactionManager   true                                               
+messageCreatedStrategy                                                            
+asyncStopListener              false                                              
+transferExchange               false                                              
+selector                                                                          
+requestTimeout                 20000                                              
+allowNullBody                  true                                               
+replyToDeliveryPersistent      true                                               
+deliveryDelay                  -1                                                 
+disableReplyTo                 false                                              
+formatDateHeadersToIso8601     false                                              
+pubSubNoLocal                  false                                              
+queueBrowseStrategy                                                               
+forceSendOriginalMessage       false                                              
+subscriptionShared             false                                              
+replyToType                                                                       
+transactionTimeout             -1                                                 
+durableSubscriptionName                                                           
+replyToSameDestinationAllowed  false                                              
+jmsMessageType                                                                    
+defaultTaskExecutorType                                                           
+replyToOnTimeoutMaxConcurrent{zwsp}Consumers 1                                                  
+username                                                                          

@@ -1,0 +1,69 @@
+Direction: Producer
+Component: http
+
+Attribute                      Default              Specification                 
+------------------------------------------------------------
+
+soTimeout                                           60000                         
+headerFilterStrategy                                #finoHeaderFilter             
+httpClientConfigurerRef                             myHttpClientConfigurer        
+clientBuilder                                                                     
+authMethodPriority                                                                
+synchronous                    false                                              
+ignoreResponseBody             false                                              
+authDomain                                                                        
+proxyPort                                                                         
+transferException              false                                              
+copyHeaders                    true                                               
+proxyAuthPassword                                                                 
+connectTimeout                 -1                                                 
+socketTimeout                  -1                                                 
+bridgeEndpoint                 false                                              
+clearExpiredCookies            true                                               
+proxyAuthMethod                                                                   
+httpContext                                                                       
+authenticationPreemptive       false                                              
+throwExceptionOnFailure        true                                               
+httpBinding                                                                       
+authHost                                                                          
+proxyAuthUsername                                                                 
+connectionClose                false                                              
+proxyHost                                                                         
+authPassword                                                                      
+httpConfiguration                                                                 
+lazyStartProducer              false                                              
+httpClientConfigurer                                                              
+preserveHostHeader             false                                              
+disableStreamCache             false                                              
+clientConnectionManager                                                           
+connectionTimeToLive                                                              
+cookieHandler                                                                     
+basicPropertyBinding           false                                              
+getWithBody                    false                                              
+proxyAuthPort                                                                     
+useGlobalSslContextParameters  false                                              
+maxTotalConnections            200                                                
+sslContextParameters                                                              
+proxyAuthScheme                                                                   
+mapHttpMessageBody             true                                               
+httpMethod                                                                        
+deleteWithBody                 false                                              
+httpUri                                                                           
+customHostHeader                                                                  
+proxyAuthDomain                                                                   
+httpClient                                                                        
+proxyAuthNtHost                                                                   
+chunked                        true                                               
+httpClientOptions                                                                 
+connectionsPerRoute            20                                                 
+useSystemProperties            false                                              
+okStatusCodeRange              200-299                                            
+proxyAuthHost                                                                     
+mapHttpMessageFormUrlEncoded{zwsp}Body true                                               
+authUsername                                                                      
+allowJavaSerializedObject      false                                              
+connectionRequestTimeout       -1                                                 
+x509HostnameVerifier                                                              
+mapHttpMessageHeaders          true                                               
+authMethod                                                                        
+cookieStore                                                                       

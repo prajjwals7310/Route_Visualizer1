@@ -1,0 +1,2942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Camel Route Visualizer</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 250px;
+      background-color: #222;
+      color: #fff;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .sidebar h2 {
+      margin-top: 0;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+    .sidebar li {
+      cursor: pointer;
+      margin: 8px 0;
+      padding: 6px;
+      border-radius: 4px;
+      background: #333;
+    }
+    .sidebar li:hover {
+      background: #444;
+    }
+    .main {
+      flex-grow: 1;
+      padding: 20px;
+      overflow: auto;
+    }
+
+    .node {
+      border: 1px solid #888;
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin: 6px;
+      background-color: #fff;
+      position: relative;
+      display: inline-block;
+      vertical-align: top;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .node img {
+      width: 20px;
+      height: 20px;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+
+    .tree.vertical {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tree.horizontal {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+    }
+
+    .tree-children {
+      margin-left: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tree-children.horizontal {
+      flex-direction: row;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .route-block {
+      margin-bottom: 60px;
+    }
+
+    .close-btn {
+      float: right;
+      font-size: 18px;
+      cursor: pointer;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="sidebar">
+    <h2>Routes</h2>
+    <ul>
+      
+        
+          <li onclick="showRoute('direct:esbGetPassbookAccountTxn', 'blueprint.xml')">
+            direct:esbGetPassbookAccountTxn
+          </li>
+        
+          <li onclick="showRoute('direct:OTPAuthentication', 'blueprint.xml')">
+            direct:OTPAuthentication
+          </li>
+        
+          <li onclick="showRoute('direct:AadharAuthentication', 'blueprint.xml')">
+            direct:AadharAuthentication
+          </li>
+        
+          <li onclick="showRoute('direct:FPAuthentication', 'blueprint.xml')">
+            direct:FPAuthentication
+          </li>
+        
+          <li onclick="showRoute('direct:Passsbookdetailscall', 'blueprint.xml')">
+            direct:Passsbookdetailscall
+          </li>
+        
+      
+        
+          <li onclick="showRoute('direct:assistedmode', 'camel-route(3).xml')">
+            direct:assistedmode
+          </li>
+        
+          <li onclick="showRoute('direct:OTPAuthentication', 'camel-route(3).xml')">
+            direct:OTPAuthentication
+          </li>
+        
+          <li onclick="showRoute('direct:AadharAuthentication', 'camel-route(3).xml')">
+            direct:AadharAuthentication
+          </li>
+        
+          <li onclick="showRoute('direct:FPAuthentication', 'camel-route(3).xml')">
+            direct:FPAuthentication
+          </li>
+        
+          <li onclick="showRoute('direct:PassbookAssistedModeDMS', 'camel-route(3).xml')">
+            direct:PassbookAssistedModeDMS
+          </li>
+        
+          <li onclick="showRoute('direct:accountHistorycall', 'camel-route(3).xml')">
+            direct:accountHistorycall
+          </li>
+        
+          <li onclick="showRoute('direct:TxnPosting', 'camel-route(3).xml')">
+            direct:TxnPosting
+          </li>
+        
+          <li onclick="showRoute('direct:DMSCall', 'camel-route(3).xml')">
+            direct:DMSCall
+          </li>
+        
+          <li onclick="showRoute('seda:DBResponseInsert?concurrentConsumers={{minConcurrentConsumers}}', 'camel-route(3).xml')">
+            seda:DBResponseInsert?concurrentConsumers={{minConcurrentConsumers}}
+          </li>
+        
+      
+    </ul>
+  </div>
+  <div class="main" id="main-view">
+    <!-- Routes will be rendered here -->
+  </div>
+</div>
+
+<script>
+  const routesData = [
+  {
+    "filename": "blueprint.xml",
+    "routes": [
+      {
+        "name": "from: direct:esbGetPassbookAccountTxn",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "log",
+                "type": "log",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "choice",
+                "type": "choice",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "when: ${header.Authbit} == '1'",
+                    "type": "when",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "simple",
+                        "type": "simple",
+                        "direction": "horizontal",
+                        "children": null
+                      },
+                      {
+                        "name": "choice",
+                        "type": "choice",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "when: ${header.auth_id} == '0'",
+                            "type": "when",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "simple",
+                                "type": "simple",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          },
+                          {
+                            "name": "when: ${header.auth_id} == '1'",
+                            "type": "when",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "simple",
+                                "type": "simple",
+                                "direction": "horizontal",
+                                "children": null
+                              },
+                              {
+                                "name": "to: direct:OTPAuthentication",
+                                "type": "to",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          },
+                          {
+                            "name": "when: ${header.auth_id} == '2'",
+                            "type": "when",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "simple",
+                                "type": "simple",
+                                "direction": "horizontal",
+                                "children": null
+                              },
+                              {
+                                "name": "to: direct:AadharAuthentication",
+                                "type": "to",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          },
+                          {
+                            "name": "when: ${header.auth_id} == '3'",
+                            "type": "when",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "simple",
+                                "type": "simple",
+                                "direction": "horizontal",
+                                "children": null
+                              },
+                              {
+                                "name": "to: direct:FPAuthentication",
+                                "type": "to",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          },
+                          {
+                            "name": "when: ${header.auth_id} == '4'",
+                            "type": "when",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "simple",
+                                "type": "simple",
+                                "direction": "horizontal",
+                                "children": null
+                              },
+                              {
+                                "name": "to: direct:OTPAuthentication",
+                                "type": "to",
+                                "direction": "horizontal",
+                                "children": null
+                              },
+                              {
+                                "name": "choice",
+                                "type": "choice",
+                                "direction": "horizontal",
+                                "children": [
+                                  {
+                                    "name": "when: ${header.otpRespCode} == '000'",
+                                    "type": "when",
+                                    "direction": "horizontal",
+                                    "children": [
+                                      {
+                                        "name": "simple",
+                                        "type": "simple",
+                                        "direction": "horizontal",
+                                        "children": null
+                                      },
+                                      {
+                                        "name": "to: direct:AadharAuthentication",
+                                        "type": "to",
+                                        "direction": "horizontal",
+                                        "children": null
+                                      },
+                                      {
+                                        "name": "choice",
+                                        "type": "choice",
+                                        "direction": "horizontal",
+                                        "children": [
+                                          {
+                                            "name": "when: ${header.authResCode1}== 'y'",
+                                            "type": "when",
+                                            "direction": "horizontal",
+                                            "children": [
+                                              {
+                                                "name": "simple",
+                                                "type": "simple",
+                                                "direction": "horizontal",
+                                                "children": null
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "name": "otherwise",
+                                            "type": "otherwise",
+                                            "direction": "horizontal",
+                                            "children": null
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "name": "otherwise",
+                                    "type": "otherwise",
+                                    "direction": "horizontal",
+                                    "children": null
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "name": "when: ${header.auth_id} == '5'",
+                            "type": "when",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "simple",
+                                "type": "simple",
+                                "direction": "horizontal",
+                                "children": null
+                              },
+                              {
+                                "name": "to: direct:OTPAuthentication",
+                                "type": "to",
+                                "direction": "horizontal",
+                                "children": null
+                              },
+                              {
+                                "name": "choice",
+                                "type": "choice",
+                                "direction": "horizontal",
+                                "children": [
+                                  {
+                                    "name": "when: ${header.otpRespCode} == '000'",
+                                    "type": "when",
+                                    "direction": "horizontal",
+                                    "children": [
+                                      {
+                                        "name": "simple",
+                                        "type": "simple",
+                                        "direction": "horizontal",
+                                        "children": null
+                                      },
+                                      {
+                                        "name": "to: direct:FPAuthentication",
+                                        "type": "to",
+                                        "direction": "horizontal",
+                                        "children": null
+                                      },
+                                      {
+                                        "name": "choice",
+                                        "type": "choice",
+                                        "direction": "horizontal",
+                                        "children": [
+                                          {
+                                            "name": "when: ${header.Ftp_code} == '00'",
+                                            "type": "when",
+                                            "direction": "horizontal",
+                                            "children": [
+                                              {
+                                                "name": "simple",
+                                                "type": "simple",
+                                                "direction": "horizontal",
+                                                "children": null
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "name": "otherwise",
+                                            "type": "otherwise",
+                                            "direction": "horizontal",
+                                            "children": null
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "name": "otherwise",
+                                    "type": "otherwise",
+                                    "direction": "horizontal",
+                                    "children": null
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "name": "when: ${header.auth_id} == '6'",
+                            "type": "when",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "simple",
+                                "type": "simple",
+                                "direction": "horizontal",
+                                "children": null
+                              },
+                              {
+                                "name": "to: direct:AadharAuthentication",
+                                "type": "to",
+                                "direction": "horizontal",
+                                "children": null
+                              },
+                              {
+                                "name": "choice",
+                                "type": "choice",
+                                "direction": "horizontal",
+                                "children": [
+                                  {
+                                    "name": "when: ${header.authResCode1}== 'y'",
+                                    "type": "when",
+                                    "direction": "horizontal",
+                                    "children": [
+                                      {
+                                        "name": "simple",
+                                        "type": "simple",
+                                        "direction": "horizontal",
+                                        "children": null
+                                      },
+                                      {
+                                        "name": "to: direct:FPAuthentication",
+                                        "type": "to",
+                                        "direction": "horizontal",
+                                        "children": null
+                                      },
+                                      {
+                                        "name": "choice",
+                                        "type": "choice",
+                                        "direction": "horizontal",
+                                        "children": [
+                                          {
+                                            "name": "when: ${header.Ftp_code} == '00'",
+                                            "type": "when",
+                                            "direction": "horizontal",
+                                            "children": [
+                                              {
+                                                "name": "simple",
+                                                "type": "simple",
+                                                "direction": "horizontal",
+                                                "children": null
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "name": "otherwise",
+                                            "type": "otherwise",
+                                            "direction": "horizontal",
+                                            "children": null
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "name": "otherwise",
+                                    "type": "otherwise",
+                                    "direction": "horizontal",
+                                    "children": null
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "name": "otherwise",
+                            "type": "otherwise",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "otherwise",
+                    "type": "otherwise",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "choice",
+                "type": "choice",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "when: ${header.PinGenBit} == '1' && ${header.authRespCode} == '0'",
+                    "type": "when",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "simple",
+                        "type": "simple",
+                        "direction": "horizontal",
+                        "children": null
+                      },
+                      {
+                        "name": "to: direct:Passsbookdetailscall",
+                        "type": "to",
+                        "direction": "horizontal",
+                        "children": null
+                      }
+                    ]
+                  },
+                  {
+                    "name": "when: ${header.PinGenBit} == '0' && ${header.authRespCode} == '0'",
+                    "type": "when",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "simple",
+                        "type": "simple",
+                        "direction": "horizontal",
+                        "children": null
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "doFinally",
+                "type": "doFinally",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:esbGetPassbookAccountTxn",
+        "filename": "blueprint.xml"
+      },
+      {
+        "name": "from: direct:OTPAuthentication",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "marshal",
+            "type": "marshal",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "json",
+                "type": "json",
+                "direction": "vertical",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.AccountOpening_DashBoard_Logging_Flag} == 'Y'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "choice",
+                    "type": "choice",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "when: ${header.DashBoard_Logging_Flag} == '2' || ${header.DashBoard_Logging_Flag} == '3' || ${header.DashBoard_Logging_Flag} == '4' || ${header.DashBoard_Logging_Flag} == '5'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "wireTap",
+                            "type": "wireTap",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "to: mamania",
+            "type": "to",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.otpRespCode} == '000'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "otherwise",
+                "type": "otherwise",
+                "direction": "horizontal",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.AccountOpening_DashBoard_Logging_Flag} == 'Y'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "choice",
+                    "type": "choice",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "when: ${header.DashBoard_Logging_Flag} == '2' || ${header.DashBoard_Logging_Flag} == '3' || ${header.DashBoard_Logging_Flag} == '4' || ${header.DashBoard_Logging_Flag} == '5'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "wireTap",
+                            "type": "wireTap",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:OTPAuthentication",
+        "filename": "blueprint.xml"
+      },
+      {
+        "name": "from: direct:AadharAuthentication",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.AccountOpening_DashBoard_Logging_Flag} == 'Y'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "choice",
+                    "type": "choice",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "when: ${header.DashBoard_Logging_Flag} == '2' || ${header.DashBoard_Logging_Flag} == '3' || ${header.DashBoard_Logging_Flag} == '4' || ${header.DashBoard_Logging_Flag} == '5'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "wireTap",
+                            "type": "wireTap",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "to: aryanmamania?dataFormat=MESSAGE&headerFilterStrategy=#fisHeaderFilter",
+            "type": "to",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "convertBodyTo",
+            "type": "convertBodyTo",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.authResCode1}== 'y'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "otherwise",
+                "type": "otherwise",
+                "direction": "horizontal",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.AccountOpening_DashBoard_Logging_Flag} == 'Y'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "choice",
+                    "type": "choice",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "when: ${header.DashBoard_Logging_Flag} == '2' || ${header.DashBoard_Logging_Flag} == '3' || ${header.DashBoard_Logging_Flag} == '4' || ${header.DashBoard_Logging_Flag} == '5'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "wireTap",
+                            "type": "wireTap",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:AadharAuthentication",
+        "filename": "blueprint.xml"
+      },
+      {
+        "name": "from: direct:FPAuthentication",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "marshal",
+            "type": "marshal",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "json",
+                "type": "json",
+                "direction": "vertical",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "to: mamaniaaryan?headerFilterStrategy=#fisHeaderFilter",
+            "type": "to",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.Ftp_code} == '00'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "otherwise",
+                "type": "otherwise",
+                "direction": "horizontal",
+                "children": null
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:FPAuthentication",
+        "filename": "blueprint.xml"
+      },
+      {
+        "name": "from: direct:Passsbookdetailscall",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "marshal",
+            "type": "marshal",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "json",
+                "type": "json",
+                "direction": "vertical",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "convertBodyTo",
+            "type": "convertBodyTo",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.CamelHttpResponseCode} == '200'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "choice",
+                    "type": "choice",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "when: ${header.PinGenReturnCode} == '0'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "log",
+                            "type": "log",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      },
+                      {
+                        "name": "otherwise",
+                        "type": "otherwise",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "log",
+                            "type": "log",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "when: ${header.CamelHttpResponseCode} == '500' || ${header.CamelHttpResponseCode} == '411' || ${header.CamelHttpResponseCode} == '400'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "otherwise",
+                "type": "otherwise",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:Passsbookdetailscall",
+        "filename": "blueprint.xml"
+      }
+    ]
+  },
+  {
+    "filename": "camel-route(3).xml",
+    "routes": [
+      {
+        "name": "from: direct:assistedmode",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.CustomerAuthBit} == '1'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "choice",
+                    "type": "choice",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "when: ${header.auth_id} == '1'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "to: direct:OTPAuthentication",
+                            "type": "to",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      },
+                      {
+                        "name": "when: ${header.auth_id} == '2'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "to: direct:AadharAuthentication",
+                            "type": "to",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      },
+                      {
+                        "name": "when: ${header.auth_id} == '3'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "to: direct:FPAuthentication",
+                            "type": "to",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      },
+                      {
+                        "name": "when: ${header.auth_id} == '4'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "to: direct:OTPAuthentication",
+                            "type": "to",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "choice",
+                            "type": "choice",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "when: ${header.otpRespCode} == '000'",
+                                "type": "when",
+                                "direction": "horizontal",
+                                "children": [
+                                  {
+                                    "name": "simple",
+                                    "type": "simple",
+                                    "direction": "horizontal",
+                                    "children": null
+                                  },
+                                  {
+                                    "name": "to: direct:AadharAuthentication",
+                                    "type": "to",
+                                    "direction": "horizontal",
+                                    "children": null
+                                  },
+                                  {
+                                    "name": "choice",
+                                    "type": "choice",
+                                    "direction": "horizontal",
+                                    "children": [
+                                      {
+                                        "name": "when: ${header.authResCode1}== 'y'",
+                                        "type": "when",
+                                        "direction": "horizontal",
+                                        "children": [
+                                          {
+                                            "name": "simple",
+                                            "type": "simple",
+                                            "direction": "horizontal",
+                                            "children": null
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "name": "otherwise",
+                                        "type": "otherwise",
+                                        "direction": "horizontal",
+                                        "children": null
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "name": "otherwise",
+                                "type": "otherwise",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "when: ${header.auth_id} == '5'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "to: direct:OTPAuthentication",
+                            "type": "to",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "choice",
+                            "type": "choice",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "when: ${header.otpRespCode} == '000'",
+                                "type": "when",
+                                "direction": "horizontal",
+                                "children": [
+                                  {
+                                    "name": "simple",
+                                    "type": "simple",
+                                    "direction": "horizontal",
+                                    "children": null
+                                  },
+                                  {
+                                    "name": "to: direct:FPAuthentication",
+                                    "type": "to",
+                                    "direction": "horizontal",
+                                    "children": null
+                                  },
+                                  {
+                                    "name": "choice",
+                                    "type": "choice",
+                                    "direction": "horizontal",
+                                    "children": [
+                                      {
+                                        "name": "when: ${header.Ftp_code} == '00'",
+                                        "type": "when",
+                                        "direction": "horizontal",
+                                        "children": [
+                                          {
+                                            "name": "simple",
+                                            "type": "simple",
+                                            "direction": "horizontal",
+                                            "children": null
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "name": "otherwise",
+                                        "type": "otherwise",
+                                        "direction": "horizontal",
+                                        "children": null
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "name": "otherwise",
+                                "type": "otherwise",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "when: ${header.auth_id} == '6'",
+                        "type": "when",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "simple",
+                            "type": "simple",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "to: direct:AadharAuthentication",
+                            "type": "to",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "choice",
+                            "type": "choice",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "when: ${header.authResCode1}== 'y'",
+                                "type": "when",
+                                "direction": "horizontal",
+                                "children": [
+                                  {
+                                    "name": "simple",
+                                    "type": "simple",
+                                    "direction": "horizontal",
+                                    "children": null
+                                  },
+                                  {
+                                    "name": "to: direct:FPAuthentication",
+                                    "type": "to",
+                                    "direction": "horizontal",
+                                    "children": null
+                                  },
+                                  {
+                                    "name": "choice",
+                                    "type": "choice",
+                                    "direction": "horizontal",
+                                    "children": [
+                                      {
+                                        "name": "when: ${header.Ftp_code} == '00'",
+                                        "type": "when",
+                                        "direction": "horizontal",
+                                        "children": [
+                                          {
+                                            "name": "simple",
+                                            "type": "simple",
+                                            "direction": "horizontal",
+                                            "children": null
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "name": "otherwise",
+                                        "type": "otherwise",
+                                        "direction": "horizontal",
+                                        "children": null
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "name": "otherwise",
+                                "type": "otherwise",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "otherwise",
+                        "type": "otherwise",
+                        "direction": "horizontal",
+                        "children": null
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "otherwise",
+                "type": "otherwise",
+                "direction": "horizontal",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.authRespCode} == '0' &&  ${header.AccountHistorybit} == '1'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "to: log:before?showHeaders=true",
+                    "type": "to",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "to: direct:accountHistorycall",
+                    "type": "to",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "to: log:before?showHeaders=true",
+                    "type": "to",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.authRespCode} == '0' &&  ${header.DMSdatabit} == '1' &&  ${header.cbsreturnCode} == '0'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "to: log:before?showHeaders=true",
+                    "type": "to",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "to: direct:PassbookAssistedModeDMS",
+                    "type": "to",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.authRespCode} == '0' &&  ${header.DMSreturnCode} == '0' &&  ${header.DMSDetailsBit} == '1' &&  ${header.cbsreturnCode} == '0'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "to: direct:DMSCall",
+                    "type": "to",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.authRespCode} == '0' &&  ${header.DMSreturnCode} == '0' &&  ${header.PostTxnBit} == '1' &&  ${header.cbsreturnCode} == '0' &&  ${header.DMSRespCode} == '0'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "to: direct:TxnPosting",
+                    "type": "to",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          }
+        ],
+        "route_id": "direct:assistedmode",
+        "filename": "camel-route(3).xml"
+      },
+      {
+        "name": "from: direct:OTPAuthentication",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "marshal",
+            "type": "marshal",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "json",
+                "type": "json",
+                "direction": "vertical",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "to: mamania",
+            "type": "to",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "log",
+                "type": "log",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.otpRespCode} == '000'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "otherwise",
+                "type": "otherwise",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:OTPAuthentication",
+        "filename": "camel-route(3).xml"
+      },
+      {
+        "name": "from: direct:AadharAuthentication",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "to: aryanmamania?dataFormat=MESSAGE&headerFilterStrategy=#fisHeaderFilter",
+            "type": "to",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "convertBodyTo",
+            "type": "convertBodyTo",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "to: log:before?showHeaders=true",
+            "type": "to",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.authResCode1}== 'y'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "doTry",
+                    "type": "doTry",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "catch: catch",
+                        "type": "doCatch",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "exception",
+                            "type": "exception",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "log",
+                            "type": "log",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "otherwise",
+                "type": "otherwise",
+                "direction": "horizontal",
+                "children": null
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:AadharAuthentication",
+        "filename": "camel-route(3).xml"
+      },
+      {
+        "name": "from: direct:FPAuthentication",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "marshal",
+            "type": "marshal",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "json",
+                "type": "json",
+                "direction": "vertical",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "to: mamaniaaryan&headerFilterStrategy=#fisHeaderFilter",
+            "type": "to",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.Ftp_code} == '00'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "doTry",
+                    "type": "doTry",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "catch: catch",
+                        "type": "doCatch",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "exception",
+                            "type": "exception",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "log",
+                            "type": "log",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "otherwise",
+                "type": "otherwise",
+                "direction": "horizontal",
+                "children": null
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:FPAuthentication",
+        "filename": "camel-route(3).xml"
+      },
+      {
+        "name": "from: direct:PassbookAssistedModeDMS",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "marshal",
+            "type": "marshal",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "json",
+                "type": "json",
+                "direction": "vertical",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "to: {{ESB_PassbookAssistedMode_Posting_URL_aryan}}?headerFilterStrategy=#fisHeaderFilter&throwExceptionOnFailure=false&socketTimeout={{DEFAULT_TIMEOUT}}&connectTimeout={{DEFAULT_TIMEOUT}}",
+                "type": "to",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "convertBodyTo",
+                "type": "convertBodyTo",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "choice",
+                "type": "choice",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "when: ${header.CamelHttpResponseCode} == '200'",
+                    "type": "when",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "simple",
+                        "type": "simple",
+                        "direction": "horizontal",
+                        "children": null
+                      },
+                      {
+                        "name": "choice",
+                        "type": "choice",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "when: ${header.DMSreturnCode} == '0'",
+                            "type": "when",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "simple",
+                                "type": "simple",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          },
+                          {
+                            "name": "otherwise",
+                            "type": "otherwise",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      },
+                      {
+                        "name": "log",
+                        "type": "log",
+                        "direction": "horizontal",
+                        "children": null
+                      }
+                    ]
+                  },
+                  {
+                    "name": "otherwise",
+                    "type": "otherwise",
+                    "direction": "horizontal",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          }
+        ],
+        "route_id": "direct:PassbookAssistedModeDMS",
+        "filename": "camel-route(3).xml"
+      },
+      {
+        "name": "from: direct:accountHistorycall",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "marshal",
+            "type": "marshal",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "json",
+                "type": "json",
+                "direction": "vertical",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "log",
+                "type": "log",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "process",
+                "type": "process",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "convertBodyTo",
+                "type": "convertBodyTo",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "log",
+                "type": "log",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "choice",
+                "type": "choice",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "when: ${header.CamelHttpResponseCode} == '200'",
+                    "type": "when",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "simple",
+                        "type": "simple",
+                        "direction": "horizontal",
+                        "children": null
+                      },
+                      {
+                        "name": "choice",
+                        "type": "choice",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "when: ${header.cbsreturnCode} == '0'",
+                            "type": "when",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "simple",
+                                "type": "simple",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          },
+                          {
+                            "name": "otherwise",
+                            "type": "otherwise",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "log",
+                                "type": "log",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "name": "otherwise",
+                    "type": "otherwise",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "doTry",
+                        "type": "doTry",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "catch: catch",
+                            "type": "doCatch",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "exception",
+                                "type": "exception",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "doTry",
+                        "type": "doTry",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "catch: catch",
+                            "type": "doCatch",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "exception",
+                                "type": "exception",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "doFinally",
+                "type": "doFinally",
+                "direction": "vertical",
+                "children": null
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:accountHistorycall",
+        "filename": "camel-route(3).xml"
+      },
+      {
+        "name": "from: direct:TxnPosting",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "marshal",
+            "type": "marshal",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "json",
+                "type": "json",
+                "direction": "vertical",
+                "children": null
+              }
+            ]
+          },
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.DBFlag} == 'Y'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "doTry",
+                    "type": "doTry",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "to: activemq:queue:TransactionQueue",
+                        "type": "to",
+                        "direction": "horizontal",
+                        "children": null
+                      },
+                      {
+                        "name": "catch: catch",
+                        "type": "doCatch",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "exception",
+                            "type": "exception",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "log",
+                            "type": "log",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "doTry",
+            "type": "doTry",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "convertBodyTo",
+                "type": "convertBodyTo",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "choice",
+                "type": "choice",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "when: ${header.CamelHttpResponseCode} == '200'",
+                    "type": "when",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "simple",
+                        "type": "simple",
+                        "direction": "horizontal",
+                        "children": null
+                      },
+                      {
+                        "name": "choice",
+                        "type": "choice",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "when: ${header.TxnRespCode} == '0'",
+                            "type": "when",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "simple",
+                                "type": "simple",
+                                "direction": "horizontal",
+                                "children": null
+                              },
+                              {
+                                "name": "doTry",
+                                "type": "doTry",
+                                "direction": "horizontal",
+                                "children": [
+                                  {
+                                    "name": "catch: catch",
+                                    "type": "doCatch",
+                                    "direction": "horizontal",
+                                    "children": [
+                                      {
+                                        "name": "exception",
+                                        "type": "exception",
+                                        "direction": "horizontal",
+                                        "children": null
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "name": "otherwise",
+                            "type": "otherwise",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      },
+                      {
+                        "name": "to: seda:DBResponseInsert?waitForTaskToComplete=Never",
+                        "type": "to",
+                        "direction": "horizontal",
+                        "children": null
+                      }
+                    ]
+                  },
+                  {
+                    "name": "otherwise",
+                    "type": "otherwise",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "doTry",
+                        "type": "doTry",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "catch: catch",
+                            "type": "doCatch",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "exception",
+                                "type": "exception",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "name": "doTry",
+                        "type": "doTry",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "catch: catch",
+                            "type": "doCatch",
+                            "direction": "horizontal",
+                            "children": [
+                              {
+                                "name": "exception",
+                                "type": "exception",
+                                "direction": "horizontal",
+                                "children": null
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "log",
+                "type": "log",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "catch: catch",
+                "type": "doCatch",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "exception",
+                    "type": "exception",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  },
+                  {
+                    "name": "log",
+                    "type": "log",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:TxnPosting",
+        "filename": "camel-route(3).xml"
+      },
+      {
+        "name": "from: direct:DMSCall",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "log",
+            "type": "log",
+            "direction": "vertical",
+            "children": null
+          },
+          {
+            "name": "loop",
+            "type": "loop",
+            "direction": "vertical",
+            "children": [
+              {
+                "name": "header",
+                "type": "header",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "marshal",
+                "type": "marshal",
+                "direction": "vertical",
+                "children": [
+                  {
+                    "name": "json",
+                    "type": "json",
+                    "direction": "vertical",
+                    "children": null
+                  }
+                ]
+              },
+              {
+                "name": "log",
+                "type": "log",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "to: activemq:queue:DMSQueue",
+                "type": "to",
+                "direction": "vertical",
+                "children": null
+              },
+              {
+                "name": "log",
+                "type": "log",
+                "direction": "vertical",
+                "children": null
+              }
+            ]
+          }
+        ],
+        "route_id": "direct:DMSCall",
+        "filename": "camel-route(3).xml"
+      },
+      {
+        "name": "from: seda:DBResponseInsert?concurrentConsumers={{minConcurrentConsumers}}",
+        "type": "route",
+        "direction": "vertical",
+        "children": [
+          {
+            "name": "choice",
+            "type": "choice",
+            "direction": "horizontal",
+            "children": [
+              {
+                "name": "when: ${header.DBFlag} == 'Y'",
+                "type": "when",
+                "direction": "horizontal",
+                "children": [
+                  {
+                    "name": "simple",
+                    "type": "simple",
+                    "direction": "horizontal",
+                    "children": null
+                  },
+                  {
+                    "name": "doTry",
+                    "type": "doTry",
+                    "direction": "horizontal",
+                    "children": [
+                      {
+                        "name": "to: activemq:queue:TransactionQueue",
+                        "type": "to",
+                        "direction": "horizontal",
+                        "children": null
+                      },
+                      {
+                        "name": "catch: catch",
+                        "type": "doCatch",
+                        "direction": "horizontal",
+                        "children": [
+                          {
+                            "name": "exception",
+                            "type": "exception",
+                            "direction": "horizontal",
+                            "children": null
+                          },
+                          {
+                            "name": "log",
+                            "type": "log",
+                            "direction": "horizontal",
+                            "children": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "route_id": "seda:DBResponseInsert?concurrentConsumers={{minConcurrentConsumers}}",
+        "filename": "camel-route(3).xml"
+      }
+    ]
+  }
+];
+  const iconMap = {"to": "to_icon.png", "from": "from_icon.png", "choice": "choice_icon.png", "log": "log_icon.png", "doTry": "try_icon.png", "doCatch": "catch_icon.png", "otherwise": "otherwise_icon.png", "when": "when_icon.png"};
+
+  function createNode(node) {
+    const div = document.createElement('div');
+    div.className = 'node';
+
+    const icon = iconMap[node.type];
+    if (icon) {
+      const img = document.createElement('img');
+      img.src = '/icons/' + icon;
+      div.appendChild(img);
+    }
+
+    const text = document.createTextNode(node.name);
+    div.appendChild(text);
+
+    if (node.children && node.children.length > 0) {
+      const childContainer = document.createElement('div');
+      childContainer.className = 'tree-children';
+      if (node.direction === "horizontal") {
+        childContainer.classList.add('horizontal');
+      }
+      for (const child of node.children) {
+        const childTree = createNode(child);
+        childContainer.appendChild(childTree);
+      }
+      div.appendChild(childContainer);
+    }
+
+    return div;
+  }
+
+  function showRoute(routeId, fileName) {
+    const container = document.getElementById("main-view");
+    container.innerHTML = '';
+
+    const file = routesData.find(f => f.filename === fileName);
+    if (!file) return;
+
+    const route = file.routes.find(r => r.route_id === routeId);
+    if (!route) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "route-block";
+
+    const close = document.createElement("span");
+    close.className = "close-btn";
+    close.textContent = "❌";
+    close.onclick = () => wrapper.remove();
+    wrapper.appendChild(close);
+
+    const treeRoot = document.createElement('div');
+    treeRoot.className = 'tree';
+    if (route.direction === "horizontal") {
+      treeRoot.classList.add("horizontal");
+    } else {
+      treeRoot.classList.add("vertical");
+    }
+
+    const rootNode = createNode(route);
+    treeRoot.appendChild(rootNode);
+
+    wrapper.appendChild(treeRoot);
+    container.appendChild(wrapper);
+  }
+</script>
+</body>
+</html>
